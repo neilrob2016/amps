@@ -1,0 +1,1262 @@
+                 A guide to the build in Amps BASIC language
+                 ===========================================
+Introduction
+============
+Amps BASIC is a fairly straight forward old style BASIC interpreter but with 
+some special commands and functions to allow it to operate in the Amps 
+enviroment. It is intended to setup and modulate the sound in a manner that
+is too complex for the front end controls alone. It can however be used as
+a standard BASIC interpreter (just using the INIT section and running in 
+console mode) however there are no user input fuctions such as READ so this
+mode has limited usefulness.
+
+At the top level a BASIC program lives in a single file loaded in at startup.
+(Currently including/importing other source files or loading BASIC programs 
+during runtime are not supported). This is done using the -bas command option 
+as follows. eg:
+
+amps -bas basic/programs/trance_tremelo2.bas
+
+At the moment the GUI support for BASIC are the buttons "RESTART BASIC",
+"PAUSE BASIC" and "DEL PROG" and the keyboard '#' which shows which sections
+are currently running.
+
+
+===============================================================================
+
+Sections
+========
+Inside the file the program is divided up into sections. Some sections are
+event driven, however the main sections run continuously and are essentially
+seperate threads of execution with shared variables. The event driven sections
+all set various system variables which are listed and they all set the 
+$event_type variable.
+
+Section name  Event driven?  Runs
+------------  -------------  ----
+INIT          NO             At initial startup
+DIAL          YES            When a GUI dial is altered. Sets $dial, $dial_value
+BUTTON        YES            When a GUI button is pressed. Sets $button,
+                             $button_value and $button_value_name
+PLAY          YES            When a new note is played. Sets $freq, $note and
+                             $note_name
+RELEASE       YES            When the final note played is released. Sets 
+                             $freq, $note & $note_name
+SCALE         YES            When the note scale is changed (mouse wheel).
+                             Sets $scale and $scale_name
+KEYSTART      YES            When the keyboard start note is changed using the
+                             arrow key buttons. Not that much use but can
+                             be used as a keyboard trigger. Sets $key_start_note
+FUNCKEY       YES            When one of the keyboard function keys is pressed.
+                             Sets $function_key which is numeric starting at 1.
+FILTER        YES            Called when the mouse is in the filter area of the
+                             window and the filter value is changed.
+WINDOW        YES            Called when the window size is changed or is
+                             mapped unmapped. See $win_mapped, $win_width,
+                             and $win_height.
+EVENT         YES            When any event occurs even if the specific event
+                             section is not declared. This also includes when
+                             the window is closed by X.
+MAIN(0)       NO             Continuously once started following INIT and is 
+                             multi threaded with other MAIN sections. 
+MAIN1         NO             As above
+MAIN2         NO             As above
+MAIN3         NO             As above
+MAIN4         NO             As above
+TIMER(0)      NO             Will be called every timer interval in seconds 
+                             specified in the section header. Allows more 
+                             accurate timing than using SLEEP in a MAIN section.
+TIMER1        NO             As above
+TIMER2        NO             As above
+TIMER3        NO             As above
+TIMER4        NO             As above
+
+eg:
+
+section init
+	var event_cnt = 0
+
+section button
+	print "Button ",$button," pressed"
+
+section dial
+	print "Dial ",$dial," turned"
+
+section window
+	if $win_mapped then
+		print "Window mapped. Size = ",intstr($win_width),"x",intstr($win_height)
+	else
+		print "Window unmapped"
+	fi
+
+section event
+	event_cnt = event_cnt + 1
+	print "Event = ",$event_type,", total events = ",event_cnt
+
+section timer 2.5
+	printmesg "Meep!"
+
+section timer1 4
+	printmesg "Moop!"
+
+section main
+	while 1
+		mesg "hello"
+		sleep 1
+	wend
+
+AMPS will not fully start until the INIT section has completed so be careful 
+putting loops in this section. Also any long loops in any event driven sections
+will hang the main part of the system until they complete. Endless loops in 
+MAIN sections however is fine. In fact if a MAIN section exits either 
+deliberately using the "exit" command or by simply reaching the end of its 
+section, it will not be re-run.
+
+If the INIT section fails with an error all other sections will be disabled
+and will not run.
+
+To see the status of all the current sections press '#'. They will either
+be STOP, RUN, SLEEP or BLOCKED.
+
+MAIN is actually an alias for MAIN0, TIMER for TIMER0 and they are 
+interchangable. However they are also mutually exclusive so you cannot have
+MAIN and MAIN0 sections in the same program. Ditto TIMER and TIMER0.
+
+===============================================================================
+
+Line endings
+============
+A line ends either at a newline, when another command is found or where there
+is a colon. The colon is only required if following 1 command there is a
+variable assignment. So the following are equivalent.
+
+1)
+print "hello"
+a = 123
+
+2)
+print "hello" let a = 123
+
+3)
+print "hello" : a = 123
+
+Currently lines cannot be extended onto the next line using a backslash though
+this may change in the future.
+
+
+===============================================================================
+
+Variables
+=========
+Unlike a lot of other versions of BASIC, variables *must* be declared. This is
+done using the VAR (or DIM command which is identical). There are 2 main 
+types of variables - numbers (which internally are stored as a double) or 
+strings though the difference is transparent to users and they are 
+interchangable. These can be further subdivided into arrays and simple 
+key-value dictionaries thouse these can be of mixed type. The VAR command can 
+only initialise simple variables. 
+
+eg:
+var abc = 123, def = "hello world"  # Simple variable initialisation
+var def = 0xFF                      # Hex value initialisation
+var myarr[10]                       # Cannot initialise arrays
+var mydict                          # Dictionaries don't need special 
+                                    # initialisation
+myarr[0] = 123
+myarr[1] = "hello"
+mydict["hello"] = "world"
+mydict["day1"] = "monday"
+mydict["wibble"] = 123
+
+Any variable can store dictionary values even if it is an array and a
+dictionary variable can store simple values.
+
+myarr["wibble"] = "wobble"
+mydict = 123
+
+Currently arrays cannot be directly initialised. A simple way to do this is
+to use a DATA list and use the array variable itself in simple mode as a loop
+variable. Note that array indexing starts at zero. eg:
+
+section init
+	var a[5]
+@mydata
+	data "this","is",123,"some","data"
+	restore "mydata"
+	for a = 0 to 4
+		read a[i]
+	next i
+
+A final thing to mention - all variables are global. They are not confined to
+a given section.
+
+
+System variables
+================
+There are a number of system variables that are either set permanently or are
+set when BASIC enters an event section. All these variables start with a dollar
+'$' sign and cannot be set by a user program - ie they are read only. Note 
+however that a lot of these variables are duplicated as SYS: variables and
+can be set using the set() function.
+
+
+Name               Event     What is it for?
+====               =====     ===============
+$version                     Version string of the AMPS system.
+$build_date                  Compilation date and time.
+$build_options               Compilation options from NO_SOUND, NO_LOG2, ALSA
+$mode                        "GUI" or "CONSOLE" depending on what mode AMPS was
+                             started in.
+$time                        Current time in seconds and microseconds.
+$uptime                      Uptime of the system in seconds and microseconds
+$pi                          Value of PI
+$e                           Value of E
+$num_snd_types               Number of sounds types. Eg: square, sawtooth
+$num_chords                  Number of chords.
+$num_arp_seqs                Number of arpeggiator sequences
+$num_phasing_modes           Number of phaser modes
+$num_res_modes               Number of resonance modes
+$num_freq_modes              Number of frequency modes. Eg: notes, continuous
+$num_notes                   Max number of notes in the virtual keyboard
+$num_scales                  Number of musical scales
+$num_ring_ranges             Ring modulator range count (RI button)
+$num_ring_modes              Ring modulator mode count (RM button). Eg: sine
+$event_type        All       Tells you the type of event. Most useful in EVENT
+                             section. eg: value = BUTTON, DIAL
+$dial              DIAL      Set to the name of the dial that was changed
+$dial_value        DIAL      Set to what it was changed to
+$button            BUTTON    Set to the name of the buttong that was changed
+$button_value      BUTTON    Set to what it was changed to
+$button_value_name BUTTON    Set to the name of the value if it has one.
+$freq              PLAY/REL  Frequency played
+$note              PLAY/REL  Numeric value of note played
+$note_name         PLAY/REL  Name of note played
+$filter            FILTER    Value of filter when changed by mouse. Note it 
+                             gives the same value whether HIGHPASS FILTER is on
+                             or not.
+$function_key      FUNCKEY   Number of function key pressed
+$key_start_note    KEYSTART  Number of first note played by keyboard when
+                             changed using left or right arrow keys.
+$scale             SCALE     Numeric value of new scale
+$scale_name        SCALE     Name of new scale
+$section           All       Name of section currently being executed. Also set                              in MAIN sections.
+$restart_num      [restart]  Incremented each time BASIC is restarted.
+
+$span[255]                   Unitless values calculated by the spectrum 
+                             analyser when its switched on. Index range is  
+                             0 -> 254. Each value covers a band 20Hz wide 
+                             starting at 0Hz so max freq detected = 5100Hz.
+$span_max_index              Max index of $span[] in which there is valid data.
+                             This changes as the analyser range changes.
+$arg                         The string passed in via the -arg command line
+                             argument. It keeps this value even if a new 
+                             program is loaded from within the GUI.
+$true                        Value of 1. For use where absolute clarity is
+                             required.
+$false                       Value of 0. Ditto above.
+$num_timers                  Number of available TIMER sections (5)
+$timer_interval[5]           Values of the intervals for the given timers
+                             from 0 -> 4
+$effects_seq                 The current effects sequence string. See also
+                             SYS:EFFECTS_SEQ.
+$win_mapped                  Either 1 or 0 depending whether the main AMPS
+                             window is minimised or not.
+$win_width                   The current window width. See also SYS:WIN_WIDTH.
+$win_height                  The current window width. See also SYS:WIN_HEIGHT.
+$sound_enabled               1 or 0 depending on whether sound output is 
+                             enabled. Will be zero if compiled with NO_SOUND 
+                             or -nosnd option used on command line.
+$sound_system                OS sound system used
+$sampling_enabled            1 or 0 depending on whether sampling is enabled.
+$com_exec_cnt                The number of BASIC commands execute in the 
+                             current time slice.
+
+===============================================================================
+
+Operators
+=========
+The following operators are supported:
+	=
+	<>
+	>=
+	<=
+	>
+	<
+	+
+	-
+	*
+	/
+	%
+	NOT   (numeric NOT - 0 becomes 1, 1 becomes 0)
+	AND   (logical AND - takes numbers or strings)
+	OR    (logical OR - ditto)
+	XOR   (logical XOR - ditto)
+	&     (bitwise AND)
+	|     (bitwise OR)
+	^     (bitwise XOR)
+	~     (ones complement)
+	<<    (left shift)
+	>>    (right shift)
+
+Note that the bitwise operators &,|,^,<<,>> convert numbers into 32 bit
+unsigned integers before operating on them. 
+
+===============================================================================
+Expressions
+===========
+Expressions can consist of a combination numbers, strings and functions.
+eg:
+
+  2 + 2
+  2 * "hello "
+  "Radians = " + tostr(sin(ang) / 57.3)
+  
+===============================================================================
+
+Loops
+=====
+There are 4 loop types not including GOTO.
+
+FOR-NEXT
+WHILE-WEND
+DO-UNTIL
+LOOP-LEND
+
+See the Commands section for more details.
+
+
+===============================================================================
+
+Labels
+======
+Labels are denoted by a @ sign. eg: @mydata. They are used by the GOTO, GOSUB
+and RESTORE commands. When using these commands the label name can be the
+result of an expression therefor when using the name directly it must be within
+double quotes otherwise BASIC will assume its a variable name.
+
+eg:
+@mylabel
+	:
+	gosub "my" + "label"
+
+
+===============================================================================
+
+Subroutines
+===========
+Amps BASIC does not support user defined functions for the sake of internal
+simplicity. It only supports subroutines which are denoted simply with a 
+label. The standard BASIC method of GOSUB-RETURN are used and nested 
+subroutines are supported.
+
+
+===============================================================================
+
+Commands
+========
+Commands carry out the flow of control and most of the tasks of the BASIC 
+language. They do not return values and each one executing adds 1 to the
+yield count of the section. 
+
+Following is a list and then explanations of what each command does.
+
+	SECTION
+
+	VAR
+	LET
+	CLEAR
+
+	IF-THEN-ELSE-FI/FIALL
+	FOR-TO-STEP-NEXT
+	WHILE-WEND
+	DO-UNTIL
+	BREAK
+	CONTINUE
+
+	GOTO
+	GOSUB-RETURN
+
+	DATA
+	READ
+	RESTORE
+	AUTORESTORE
+
+	PRINT
+	MESG
+	PRINTMESG
+
+	SLEEP
+	EXIT
+	QUIT
+	PAUSE
+	RESTART
+
+	YIELD
+	BLOCK
+	UNBLOCK
+
+	REM
+
+
+SECTION
+-------
+As described above
+
+
+VAR
+---
+See the Variables section of this document above.
+
+
+LET
+---
+This is included for the sake of completeness. It is not required to assign
+values to variables but you can use it if you want. eg:
+
+	let abc = 123
+
+and 
+
+	abc = 123
+
+are functionally identical.
+
+
+CLEAR
+-----
+This clears down variables - it sets all array values to numeric zero and
+deletes all dictionary key-value pairs. eg:
+
+section init
+	var a[10] 
+	var b = 567
+	a[1] = 123
+	a[2] = "hello"
+	a["test"] = "toast"
+	clear a,b
+	print a[1],",",a[2],",",haskey(a,"test"),b
+	
+
+
+IF-THEN
+-------
+This is a fairly standard IF statement. A few things to note however is that
+it allows multiple commands to be executed following the THEN and this block
+of commands must be terminated by an ELSE or FI. One thing to note however 
+is FIALL. This allows you to terminate a cascade of IF-THEN-ELSEs in one 
+command, but bear in mind that it terminates *all* IF statements.
+
+eg:
+if a = b then
+	...
+else
+	if a = c then
+		...
+	else
+		if a = d then
+			...
+		fi
+	fi
+fi
+
+can also be written as:
+
+if a = b then
+	...
+else if a = c then
+	...
+else if a = d then
+	...
+fiall
+
+Note though that the following will result in an Unexpected ELSE error because
+FIALL doesn't distinguish between nested and non nested IFs.
+
+if 1 = 1 then
+	if 2 = 2 then
+		print "2"
+	else
+		print "3"
+	fiall
+else                        <-- error here
+	:
+
+The way around this is to use 2 FIs.
+
+if 1 = 1 then
+	if 2 = 2 then
+		print "2"
+	else
+		print "3"
+	fi fi
+else
+	:
+
+
+FOR-NEXT
+--------
+A standard FOR-NEXT style loop. Note that if the direction of the from and to
+values differs to that of the stepping value then an error will occur. If no
+stepping value is given then it will default to 1 or -1 depending on the 
+direction of the loop. When the loop ends the value of the variable will be
+the TO value or the nearest value to TO that the stepping allows. In the 
+first example below this will be 10, in the 2nd it will be 9.
+
+eg:
+var i
+for i = 1 to 10 step 0.1
+	print i
+next i
+
+
+WHILE-WEND
+----------
+While the condition is true then execute the loop. 
+
+eg:
+var i = 0
+while i < 10
+	print i
+	i = i + 1
+wend
+
+
+DO-UNTIL
+--------
+Loop until the condition is true. This construct will always execute the loop
+at least once.
+
+eg:
+var i = 0
+do
+	print i
+	i = i + 1
+until i == 10
+
+
+LOOP-LEND
+---------
+This loops the given number of times. If the count the code within the block
+will never be executed and if the count is < 0 then it will loop forever.
+
+eg:
+
+var i = 0
+loop 10
+	print "i = ",intstr(i)
+	i = i + 1
+lend
+
+
+BREAK/CONTINUE
+--------------
+These break you out of or continue around the loop. They work with all looping
+contructs.
+
+eg:
+for i = 1 to 10
+	print i
+	if i = 3 then break fi
+next
+
+
+GOTO
+----
+This caused control to jump to the first line after a labal. The label name
+following the goto must be enclose in quotes unless it is the result of an
+expression.
+
+eg:
+	i = 0
+	labname = "lab1"
+@lab1
+	print i
+	i = i + 1
+	if i = 3 then labname = "lab2" fi
+	goto labname
+	
+@lab2
+	print "Done"
+
+
+GOSUB/RETURN
+------------
+The same as GOTO except the RETURN statement will cause control to return
+to the command after the GOSUB that caused the jump. Nested gosub-returns
+are supported.
+
+eg:
+
+section init
+	var i
+	for i = 1 to 10
+		gosub "doprint"
+	next i
+	exit
+@doprint
+	print "I = ",i
+	return
+
+
+DATA/READ/RESTORE/AUTORESTORE
+-----------------------------
+DATA lines are BASICs method of storing large amounts of data in a simple
+fashion. The DATA lines themselves do nothing - they are bypassed in program
+execution. However as soon as a READ command is issued BASIC will read the next
+piece of data from the current DATA line. The DATA line to read is set using
+the RESTORE or AUTORESTORE commands and a label. The difference between these 2
+commands is that AUTORESTORE will automatically reset the next DATA line to
+that following the label when the end of the data block is reached. Restore will
+not do this and a further READ will result in a "DATA exhausted" error. A data 
+block is considered to be a contiguous set of DATA lines.
+
+Note that DATA lines can contain a mixture of numbers or strings and can also
+contain expressions whose value can change during runtime. Also note that
+when doing an (AUTO)RESTORE this is section specific. Each section has its
+own data read pointer.
+
+eg:
+
+section init
+@datastart
+	data "i","equals",i
+	data "times",2,"equals",i*2
+	rem
+	data "this","line","in another","block"
+
+	autorestore "datastart"
+	var i,d
+	for i = 1 to 20
+		read d
+	print "data = ",d
+	next i
+
+Run this then change the AUTORESTORE to a RESTORE and compare the behaviour.
+
+
+PRINT
+-----
+This outputs a text string to the console. It is mainly intended for 
+debugging purposes so there is no string or number formatting available.
+Values and expressions can be chained together with commas. If you put a 
+semi colon at the end it will suppress the newline;
+
+eg: print "hello ",2*2," cruel world "; : print "out there"
+
+
+MESG
+----
+This outputs a text string to the GUI in the same "Star Wars" intro format
+as the GUI functions. Like the PRINT command values and expressions can be 
+chained together.
+
+eg: mesg "hello ",2*2," cruel world"
+
+
+PRINTMESG
+---------
+This combines the 2 commands above so you can print to the console and the
+GUI at the same time.
+
+
+SLEEP
+-----
+This pauses the execution for the script for the given number of seconds. 
+Fractions of a second are allowed. Be aware that if you use this in any section
+other than a main section it will halt the entire AMPS system until the time out
+expires.
+
+eg:
+	while 1
+		mesg "Time now is ",$time
+		sleep 0.5
+	wend
+
+The timing of the command is not always accurate below 0.05 seconds however it
+depends on the yield value and a number of other internal factors.
+
+
+EXIT
+----
+This command will make the interpreter exit/return from the section and set
+the section to terminated. If you wish to simply return from a section use
+the YIELD command with no options. To exit the program completely you can use 
+the option PROGRAM. 
+
+eg:
+
+section button
+	print "Button = ",$button
+	if $button = "RE" then
+		printmesg "Button section exiting!"
+		exit 
+	fi
+
+section main
+	var i
+	for i = 1 to 100
+		print i
+		sleep 0.1
+	next i
+
+section main1
+	sleep 2
+	printmesg "Program stopping!"
+	exit program
+
+
+QUIT
+----
+This caused the entire AMPs program to quit just as if you had pressed the
+QUIT button in the GUI.
+
+
+PAUSE
+-----
+Calling this command is exactly the same as pressing the PAUSE BASIC button
+in the GUI. Its primarily intended for debugging purposes. The exact same
+effect can be achieved by using set("PAUSE BASIC",1) but this is tidier.
+
+
+RESTART
+-------
+Restarts BASIC. In this case set("RESTART BASIC",1) won't work and will usually
+lead to an Undefined variable or function error. This command cannot be used
+in the INIT section.
+
+
+RESET
+-----
+Resets the synth to its startup state except for the events recorder. If you
+wish to reset the recorder too then do: set("RST",1).
+
+
+YIELD
+-----
+This has 2 functions. If called with no arguments it yields control back from
+the current executing BASIC section to the main AMPS program. This is a way of 
+exiting a section without terminating it and also for making programs more 
+efficient instead of having them sit in tight loops wasting CPU cycles.
+
+eg:
+
+section event
+	myvar = 1
+
+section main
+	while myvar != 1
+		yield
+	wend
+
+Its second function is to set the default yield value for the interpreter and
+it goes from 0 to int max. This value is how many commands/lines the 
+interpreter executes in a MAIN section before it returns control back to the 
+main program. The current value can be obtained by calling get("YIELD"). 
+
+eg:
+	print "Default yield = ",get("SYS:YIELD")
+	yield 20
+	print "Yield now = ",get("SYS:YIELD")
+
+The same effect can get had by using the set() function, however this is 
+done slightly less efficiently inside the interpreter so is not recommended.
+
+eg:
+	print "Default yield = ",get("SYS:YIELD")
+	print "Yield now = ",set("SYS:YIELD",20)
+	
+Note that setting yield to zero means that the section will continue running
+until the section ends/exits , sleep is called or there is an error and all
+other sections will be suspended plus the main synth operation also.
+
+The yield only applies to MAIN sections, not event or timer sections.
+
+
+BLOCK/UNBLOCK
+-------------
+These commands block and unblock other BASIC sections from running and hence 
+prevent race conditions. The rest of the synth continues running however so
+this is NOT the same as doing "yield 0" which will also block the main synth 
+thread from running.
+
+Note that event sections (eg: PLAY, RELEASE) all run to their end anyway 
+without anything being allowed to interrupt so by default block all other 
+sections. You can use these commands in event sections but they will have no 
+effect so for example you cannot call unblock in an event section to allow 
+another section to interrupt it. Ditto the INIT section.
+
+The block holds until UNBLOCK is called or the section exits either using the
+EXIT or YIELD commands or the end of the section is reached or due to an error.
+The SLEEP command does not end the block.
+
+eg:
+
+section main
+	var i
+	sleep 1
+	print "Blocking..."
+	block
+		for i = 1 to 10 
+			print $section,": ",i
+			sleep 1
+		next i
+		print "Unblocking..."
+	unblock
+
+section main1
+	var j
+	for j = 1 to 100
+		print $section,": ",j
+		sleep 0.1
+	next j
+
+This code will suspend operation of the rest of the program until it has
+finished counting and you will see the count in MAIN1 halt before resuming
+later on. All commands executed in a locked block count towards the yield count
+for the section so if it exceeds them it will exit as soon as unlock is called. 
+
+Do not confuse this construct with a mutex used in multithreading. Mutexes
+only prevent other threads running when they try and lock an already locked
+mutex. This contruct prevents all other sections running no matter what they
+are doing.
+
+
+REM
+---
+This command does nothing - it is the same as using # for comments except for
+one crucial area - # comments are not part of the running program but a REM
+statement is and as such it is counted as a single command. Because of this it 
+can be used to adjust timings slightly. It can also simply be used as syntatic
+sugar to space out empty blocks. See basic/example_code/rem.bas
+
+
+
+===============================================================================
+
+Functions
+=========
+Functions optionally take parameters and always return values. BASIC functions
+can be divided up into a number of groups: Get/set, maths, string, dictionary, 
+fields and miscellanious. If the incorrect type is passed to a function it
+will throw an "Invalid argument" error and the entire program will stop.
+
+
+Get/Set
+-------
+These are the 2 most important functions in the language. They allow you to get
+and set button, dial and system values, which means you can for example set
+the current oscillator sounds, sound frequency, volume and so forth. The get()
+function uses the format get(<field>) whereas set() is set(<field>,<value>).
+	Essentially the SYS: variables are the same as $<var> system variables 
+except they are also writable.
+	All system values are prepended with SYS: whereas buttons and dials use
+the same name that they appear with in the GUI. eg:
+
+# Set main oscillator to sawtooth
+section init
+	set("SAWTOOTH","ON")
+	# set("SAWTOOTH",1) - alternative to "ON"
+
+This sets the button SAWTOOTH to on which in turn sets the main oscillator
+to that value. However because the 2 sub oscillators use a single button to
+change modes you have to give them a numeric specific value. eg:
+
+	print "Current sub osc 1 value = ",get("SB1")
+	:
+	set("SB1",5)
+
+# Another (simpler) way of setting the main oscillator
+section init
+	set("SYS:MAIN_OSC","SAWTOOTH")
+
+
+The strings "ON" and "OFF" or "YES" and "NO" are always valid as a string set 
+value since they simply translate to 1 and 0 respectively. However some
+system fields and buttons can have their value set by other string values.
+
+They are:
+
+	SYS:TITLE          : Window title bar
+	SYS:MAIN_OSC       : Main oscillator waveform
+	SYS:NOTE           : Note to play. 
+	SYS:KEY_START_NOTE : Note the PC keyboard note keys (1 -> =) start at.
+	SYS:SCALE          : Current scale, eg A, C#m (for C# minor). You can
+	                     also use scale numbers and the long scale name to
+	                     set.
+	SYS:DIR            : Current working directory
+	SB1                : Sub oscillator 1 waveform button
+	SB2                : Sub oscillator 2 waveform button
+	CH                 : Chord button
+	FQ                 : Frequency mode
+	RE                 : Resonance mode
+	PH                 : Phasing mode
+	AR                 : ARP sequence
+
+For the effect cycling button fields this string value will be the name of the 
+effect required which is the name seen when using the GUI. Eg:
+
+	set("SB1","SAWTOOTH")
+	set("CH","1-3-5")
+	set("AR","3 NOTES UP A")
+	set("FQ","CONTINUOUS")
+	set("PH","ADDITIVE FLANGER")
+	set("RE","FOLLOW MAIN FREQ")
+
+They can also all be set numerically. All other SYS fields, buttons and dials
+can *only* be set by numeric value. Also note that the ring modulator frequency
+button "IF" will also update the ring mod range "RI" if the frequency is outside
+the current range. eg:
+
+	set("RI",1)
+	set("IF",512)
+	print "Range now = ",get("RI")
+
+For SYS:NOTE the note that can be played is dependent on the scale so for 
+example in the scale of C you cannot play an F#. The format is <octave><A-G>[#]
+where octave starts at zero for the lowest one.
+
+	set("SYS:SCALE","C")
+	set("SYS:NOTE","0C")
+	set("SYS:KEY_START_NOTE","2C")
+	sleep 1
+	set("SYS:SCALE","F#m")
+	set("SYS:NOTE","3F#")
+	sleep 1
+	set("SYS:SCALE","Em")
+	set("SYS:NOTE","2B")
+
+
+The system fields are as follows:
+
+Field          What is it?
+-----          -----------
+MAIN_OSC       Provides a simpler alternative to setting the main 
+               oscillator sound via the button names.
+FILTER         The current filter value.
+FREQ           The current frequency.
+NOTE           The current note and frequency. Same as $note for reading.
+KEY_START_NOTE Note the PC keyboard note keys (1 -> =) start at
+SCALE          The current scale/music key. Same as $scale for reading.
+PLAY           Play note on or off. (1/0)
+MESG           Auto messages on/off. These are the messages that appear when a 
+               button/dial is used. Normally these are switched off when BASIC 
+               runs so you don't get an endless stream of them appearing.
+IO_MESG        This switches on/off IO error messages when using the load() and
+               save() functions and setting SYS:DIR
+DIR            Current working dirctory. See examples/basic/dir.bas
+TITLE          The title bar text in the GUI window.
+YIELD          The current BASIC yield value for main sections. The YIELD 
+               command also sets it and is more efficient.
+MOUSE_TAIL     Sets the tail following the mouse pointer on or off. Can
+               override the -nt command line option.
+FREEZE         Set waveform freezing on or off. Same action as 'W' key.
+FILL           Set waveform fill in on or off. Same action as 'I' key.
+TIMER_CATCHUP  If set then the the timers will execute all missed intervals 
+               when unblocked or the program unpaused. Otherwise they just 
+               continue from the next one. Default is OFF.
+EFFECTS_SEQ    The effects sequence order which is the same format as the on 
+               screen sequence at the top right. eg: AL-RT-...
+               To just view the value using $effects_seq is more efficient.
+WIN_WIDTH      Window width. Same as $win_width.
+WIN_HEIGHT     Window height. Same as $win_height.
+
+
+Maths
+-----
+These functions all do pretty much what you'd expect. The only thing to note
+is that the trig functions work in degrees, not radians.
+
+	sin(x)         : Sine of the angle in degrees
+	cos(x)         : Cosine of the angle in degrees
+	tan(x)         : Tangent of the angle in degrees
+	arccos(x)      : Arc cosine. Returns -90 to 90 degrees
+	arcsin(x)      : Arc sine. Returns -90 to 90 degrees
+	arctan(x)      : Arc tangent. Returns -90 to 90 degrees
+	sqrt(x)        : Square root
+	abs(x)         : Absolute value of X
+	sgn(x)         : Return the sign of the number. ie -1, 0 or 1
+	random(x)      : Return a random number from zero to x inclusive.
+	pow(x,y)       : Power of X to the Y
+	log(x)         : Natural (E) logarithm
+	log2(x)        : Base 2 logarithm
+	log10(x)       : Base 10 logarithm
+	round(x)       : Rounds up or down to nearest integer.
+	floor(x)       : Rounds down
+	ceil(x)        : Rounds up
+	int(x)         : Returns the integer value of the number. This will be 
+	                 the same as floor() for positive numbers, ceil() for 
+	                 negative.
+	max(x1,x2,...) : Returns the maximum value from the given parameter list
+	                 with a minimum of 2 params currently up to a maximum 
+	                 of 10.
+	min(x1,x2,...) : As max() except returns the mininum.
+
+
+I have not included tangents because I can't see the use for them in a synth
+program such as this.
+
+
+Characters
+----------
+asc(<character>)
+	Returns the ASCII value of the given character.
+
+		print asc("A")
+
+chr(<ascii code>)
+	Returns the ASCII character for the given code.
+
+		print chr(65)
+
+
+
+Strings
+-------
+There is limited handling of strings. Its main intention is to parse scale
+names or notes or just to output some nice text as a message. Note that all
+string positions start at zero. The functions are as follows:
+
+instr(<haystack>,<needle>,<start pos>)
+	This returns the location of string needle in string haystack with the
+	search starting at position pos. If needle isn't found then then -1
+	is returned. eg:
+
+		print instr("hello world","wor",2)
+
+substr(<string>,<start pos>,<length>)
+	This returns the substring from pos of the given length. If there is
+	no string at the position then the empty string "" is returned. eg:
+
+		print substr("0123456789",3,5)
+
+tostr(<number>)
+	This converts a floating point numeric value to a string. eg:
+
+		var a = 1.234
+		print "Hello ",tostr(a)
+
+intstr(<number>)
+	This converts the floating point number to a 32 bit integer and returns
+	it as a string. eg:
+
+		var a = 1.234
+		print "Hello ",intstr(a)
+
+octstr(<number>)
+	This converts the number to an integer and prints out its octal value.
+
+		print octstr(63)
+
+hexstr(<number>)
+	This converts the number to an integer and prints out its hex value.
+
+		print "0x",hexstr(255)
+
+binstr(<number>)
+	This converts the number to an integer and prints out its binary value.
+
+		var i
+		for i = 0 to 127
+				print i," = ",binstr(i)
+		next i
+
+tonum(<string>)
+	Converts a string to a number. If the string is not a valid number
+	then it simply returns zero. Valid numbers are either floating point
+	decimal or integer hex. eg: 123.456 , 0xFFF. Floating point hex is
+	not yet supported.
+
+isnumstr(<string>)
+	Returns 0 if not a valid number, else 1 = Octal, 2 = Decimal (including
+	floats), 3 = hexadecimal. Note that floating point is only supported
+	for decimal (base 10) numbers.
+
+isnumtype(<variable>)
+	Returns 1 if the variable is currently storing a number, else 0. eg:
+
+		var a = 123
+		print isnumtype(a)
+		a = "hello"
+		print isnumtype(a)
+
+upperstr(<string>)
+	Returns the string converted to uppercase. eg:
+
+		print upperstr("hello world")
+	
+lowerstr(<string>)
+	Returns the string converted to lowercase. eg:
+
+		print lowerstr("HELLO WORLD")
+
+
+strlen(<string>)
+	Returns the length of the string. eg:
+
+		print strlen("1234567890")
+
+
+Dictionary
+----------
+BASIC implements simple dictionaries in the form of <var>[<key>] = <value>
+All variables whether simple or arrays can also be dictionaries. Numeric
+values cannot be used as keys as they will be intepreted as array indexes. If
+you need to use a number as a key then put it in quotes.
+
+eg:
+	var a
+	var key = "123"
+	a["123"] = "hello"
+	print a[key]
+
+To know if a variable has a particular key or you wish to delete a key then
+you use the functions below.
+
+haskey(<variable>,<key>)
+	Returns 1 or 0.
+
+		print haskey(a,"123")
+
+delkey(<variable>,<key>)
+	If the variable has the key it deletes it and returns 1, else it
+	returns 0.
+
+		print delkey(a,"123")
+		print delkey(a,"456")
+
+getkey(<variable>,<index>)
+	Gets the key at the given key index starting at zero. Note that this
+	index is completely seperate from the numeric array index.
+
+		a["hello"] = 123
+		a["world"] = 234
+		print a[getkey(a,0)]
+		print a[getkey(a,1)]
+
+keycnt(<variable>)
+	Returns the number of key-value pairs the variable is storing. Note 
+	that due to internal indexing the order they're returned in is not the 
+	order they're entered in.
+
+		a["hello"] = 123
+		a["cruel"] = 234
+		a["world"] = 567
+		for i = 0 to keycnt(a) - 1
+			key = getkey(a,i)
+			print "Key = ",key,", value = ",a[key]
+		next i
+
+
+See the basic/keyvalue.bas program for examples of use.
+
+
+Fields
+------
+field(<string>,<field position>,<delimiter character>)
+field1(<string>,<field position>,<delimiter character>)
+	These return the field at the given position when delimited by the
+	given character. field() allows the delimiter to appear any amount of
+	times inbetween fields, field1() only allows it to appear once. Field
+	indexing starts at zero. In the below example field() will return
+	"world" whereas field1() will return "" for position 1 and "world"
+	for position 2.
+
+		print field("hello--world",1,"-")
+		print field1("hello--world",1,"-")
+		print field1("hello--world",2,"-")
+
+fieldcnt(<string>,<delimiter character>)
+fieldcnt1(<string>,<delimiter character>)
+	These return the number of fields in the string when using the given
+	delimiter. As above, fieldcnt() will accept any number of delimiters
+	in succession, fieldcnt1() will only accept one.
+
+		print fieldcnt("hello--world","-")
+		print fieldcnt1("hello--world","-")
+
+
+Arrays
+------
+arrsize(<array variable>)
+	This returns the size of the array. Note that it does not include any
+	dictionary elements. This is of limited use except in cases where the
+	array was sized dynamically by a variable and you don't wish the store
+	the size value. 
+
+		var size = 10
+		var a[size],b[size*2]
+		print "a = ",arrsize(a)
+		print "b = ",arrsize(b)
+
+
+Notes and scales
+----------------
+getlongscalename(<scale number>)
+	Returns the long scale name. Eg: "C minor / D#"
+
+getshortscalename(<scale number>)
+	Returns the short scale name. Eg: "Cm"
+
+getscalebyname(<scale name>)
+	Returns the number of the scale from either the short or long names.
+
+		print getscalebyname("C#m")
+		print getscalebyname("C# minor / E")
+
+getnotename(<note number>,<scale number>)
+	Returns the name of the note for the given note number in the scale.
+
+		print getnotename(0,0) 
+
+getnotebyname(<note name>,<scale number>)
+	Returns the note number for the given note name in the scale.
+
+		print getnotebyname("0C",0)
+
+getnotefreq(<note number>,<scale number>)
+	Returns the frequency of the note in the given scale. Below prints the 
+	frequency of middle C.
+
+		print getnotefreq(getnotebyname("3C",0),0)
+
+getnotebyfreq(<frequency>,<scale number>)
+	Returns the number of the note in the given scale that is closest to
+	the given frequency. Below prints the note name of middle C.
+
+		print getnotename(getnotebyfreq(262,0),0)
+
+
+Other get-name functions
+------------------------
+getsoundname(<sound number>)
+getchordname(<chord number>)
+getarpseqname(<ARP sequence number>)
+getresmodename(<resonance mode number>)
+getphasingmodename(<phasing mode number>)
+getringmodename(<ring mode number>)
+getringrangename(<ring mode number>)
+
+	These return the appropriate string for the given numeric value. See 
+	example program basic/examples/getnamesnums.bas
+
+Other get number by name functions
+------------------------------------
+getchordbyname()
+getsoundbyname()
+getarpseqbyname()
+getresmodebyname()
+getphasingmodebyname()
+getringrangemodebyname()
+getringmodebyname()
+
+	These return the numeric value of for the string. See 
+	basic/examples/getnamesnums.bas
+
+
+I/O
+---
+load(<patch filename>)
+save(<patch filename>)
+	Load and save patch files with the given name. The ".amp" is 
+	automatically added to the end. Returns 1 on success, else 0.
+

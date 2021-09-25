@@ -1,0 +1,331 @@
+Oct 2013
+========
+0.9.0
+Initial version
+
+1.0.0
+- Replaced high & low pass filter algorithms with more efficient new ones.
+- Added phaser low frequency offset mult dial
+- Improved hover text
+
+
+December 2013
+=============
+1.1.0
+- Added event recorder which is a very basic sequencer.
+- Sampling now enabled by default - command line options have been removed.
+- Volume dial now controls microphone gain for sampling.
+
+1.1.1
+- Added tilda '~' home directory path support in load and save.
+
+
+May 2014
+========
+1.2.0
+- Added 
+	Aliasing
+	Waveform reflection
+	Resonance damping
+	Sine cutoff 
+	Sine cutoff LFO
+	Square width LFO
+	Effects sequence reset button
+- Current swappable effects pair now designated by colour in effects list
+- Various misc code mods and bug fixes
+
+1.2.1
+- Improved sampling code to make it more efficient and fixed a crash bug.
+- When in sampling mode instead of freq in Hz the sampling speed is shown
+
+
+June 2014
+=========
+1.3.0
+- Added 
+	Glide
+	New chords 1-2-5, 1-2-6, 1-3-6
+- Fixed bug where old 1-3-8 chord was actually 1-3-6
+- When zero width or height given on command line it defaults to the screen
+  size for that dimension
+- Message given when sampling not available
+- Tidied up sound generation code and other minor code changes & bug fixes
+
+
+July 2014
+=========
+1.3.1
+- Reduced clicking sound on soft waveforms when play stopped.
+
+
+February 2015
+=============
+1.5.0
+- Added AmpsBASIC scripting language 
+- Effects to swap now saved in patch files
+- Program now starts up in NOTES mode. Ie it displays a keyboard.
+- Fixed bug in setTitleBar()
+- Improved noise generation algorithm
+- Chord now updated during note play rather than at start of new note
+
+
+March 2015
+==========
+1.6.0
+- Can now load a BASIC program on the fly instead of only at startup using ';'
+  key.
+- Added gain compression 
+- Added echo frequency multiplication
+- Added bitwise numeric operators &,|,^,~,<< and >>
+- Added hex and octal number input. eg: var i = 0xFF, j = 0777
+- Added tohexstr() & tooctstr() functions
+- Added $span[] and $span_max_index system variables which allow BASIC programs
+  to access frequency data from the spectrum analyser if its on.
+- Added $arg system variable which is a string passed to BASIC from the command
+  line -arg option.
+- Added filling in the drawn waveform functionality. New key 'I' toggles and 
+  SYS:FILL system flag does the same from BASIC.
+- Added freezing drawn waveform. Key 'W' toggles (reset effects now 'G') and
+  SYS:FREEZE does it from BASIC.
+- Converted all floats to doubles for consistency
+- PAUSE BASIC on/off no longer saved with patch which means BASIC won't
+  start or stop when you load a patch.
+- Improved BASIC error messages
+- Can now do "YIELD 0" which will give all resources to the BASIC program.
+- Filter now unchanged if notes played above purple filter line. This means you
+  can fix the filter to a value then play notes without it changing.
+- Fixed bug: expression evaluation problem meant expressions with division in
+  could potentially produce the wrong result if brackets weren't used.
+  eg: 20 / 2 * 2 would previously give 5, not 20 as expected.
+- Fixed bug: set("SYS:YIELD",...) wasn't setting the yield!
+- Fixed bug: tonum() was incorrectly accepting a number as its argument.
+
+
+April 2015
+==========
+1.6.1
+- Added RANDOMISE button to create a random patch
+- Added EI - echo invert button to invert the signal that is put into the
+  echo buffer
+- Removed oscillator resync (OR button) as its now done automatically
+- Added SYS:DIR to get and set working directory
+- Added SYS:IO_MESG to allow IO errors/messages to be shown for load(), save()
+  and setting SYS:DIR
+- Max frequency hover text was showing Hz even when in NOTES mode.
+- Hover text for right hand side dials no longer disappears out of the window.
+- A STEP value that does not match the FOR loop direction is now an error.
+- The STEP value in FOR now defaults to -1 if loop descends and no STEP given.
+- The FOR loop variable is set to the TO value in the loop when the loop ends,
+  not TO+STEP as previously.
+- Updates to low level sound output and patch load code
+- Fixed BASIC bug that caused load() & save() to hang in INIT section
+- Fixed pathing bug with ".." when loading patch and BASIC files
+- Fixed intermittent ARP bug
+- Minor update to Makefile
+
+
+May 2015
+========
+1.6.2
+- Added FM Flanger to phasing modes.
+- If the INIT section fails in BASIC then all other sections are disabled
+- Minor bug fixes and code improvements.
+
+
+May 2015
+========
+1.6.3
+- Added DEL PROG button which deletes the BASIC program currently loaded from
+  memory.
+- Buttons "RESTART BASIC" and "PAUSE BASIC" renamed to "RESTART PROG" and
+  "PAUSE PROG" respectively.
+- LDB (load BASIC) button will now reload last program if clicked twice. This
+  makes for easier debugging.
+- Fixed bug whereby if BASIC was paused and a new program was loaded the INIT
+  section was never run.
+- Fixed bug in FOR-NEXT loop whereby if the implicit stepping direction
+  changed from down to up the next time the loop was called it could enter an 
+  infinite loop.
+- Added token & line count into BASIC section status information
+- Added "program" sub option to exit command to exit entire program
+- Updated randomise code
+- Added $true and $false system variables
+- Other minor code updates
+
+
+July 2015
+=========
+1.6.5
+- Added TIMER sections plus SYS:TIMER_CATCHUP system flag
+- Added $num_timers and $timer_period[] system variables
+- Added printmesg command that prints to stdout and writes a message to the
+  window.
+- Added repeatstr() function
+- EXIT command will now terminate event sections too. Use YIELD to simply
+  return from a section.
+- tointstr(), tohexstr(), tooctstr() have been renamed intstr(), hexstr() and
+  octstr() for brevity. The old names will still work for now however.
+- AR (ARP sequence) can now be set from BASIC using a string.
+  eg: set("AR","2 NOTES")
+- Due to unintended conseqeuences I reverted a change to the FOR loop added 
+  in 1.6.1. It now requires an explicit STEP once more for negative stepping.
+- RESET command in BASIC no longer resets the event recorder.
+- Some BASIC lookups now done with a hashmap for speed.
+- Giving "#" as a filename in GUI for loading a program reloads the most 
+  recent program loaded.
+- Internal tidying up & bug fixes
+
+
+August 2015
+===========
+1.6.6
+- PRINT command will now accept a semi colon at the end which suppresses 
+  printing of the newline.
+
+
+February 2016
+=============
+1.7.0
+- Added
+	. Ring Modulator.
+		- New buttons
+		- $num_ring_ranges & $num_ring_modes system variables added
+		- 'M' key now cycles ring modulator range. Events in save key 
+		   moved to 'O'
+   	. LOOP-LEND block
+   	. DIM command which is just a synonym for VAR
+   	. TAN(), ARCTAN(), MAX() & MIN(), BINSTR() functions
+	. FILTER event section and $filter system variable. Called when the 
+		filter value is changed by a mouse movement.
+	. $build_options system variable
+- Strings can now be multiplied directly, eg "hello " * 3 or 3 * "hello".
+  As a consequence the repeatstr() function has been removed.
+- The AND, OR and XOR logical operators can now take string arguments.
+- Reverted change in 1.6.1 for FOR command where a mismatch of the loop
+  direction and the STEP threw an error. Now the variable is set to the
+  'from' value and the loop terminates.
+- Fixed bug in FOR loop not always reaching end value when using floating 
+  point steppings.
+- Lots of internal code changes.
+
+
+August 2016
+===========
+1.8.0
+- Added -d command line option to set X display
+- Added -adev command line option to set ALSA device.
+- Default ALSA device name changed from "default" to "sysdefault"
+- Added the following BASIC functions:
+	. getlongscalename()
+	. getshortscalename()
+	. getscalebyname()
+	. getnotename()
+	. getnotebyname()
+	. getnotefreq()
+	. getnotebyfreq()
+	. getchordname()
+	. getarpseqname()
+	. getresmodename()
+	. getphasingmodename()
+	. getringrangename()
+	. getringmodename()
+- log*() functions now error if parameter <= zero
+- sqrt() function now errors if parameter < zero
+- Can now use \ to continue the BASIC line onto the next file line instead of
+  having a long line that wraps around.
+- SYS:SCALE can now be set by scale long name as well as short name and number
+- BASIC speed improvements due to indexing for variable names and dictionary 
+  keys.
+- If scale is changed and a note is playing then its automatically set to the
+  correct frequency for the scale.
+- Stopped set("SYS:NOTE",..) wrapping the note value if < 0 
+- Error given if TIMER section time interval < minimum resolution.
+- Changed a memcpy() to memmove() as the memory areas were overlapping and it 
+  was causing problems on newer versions of gcc.
+
+
+February 2017
+=============
+1.9.0
+- Added the WINDOW section for BASIC programs which will be called if the
+  program window size is changed of if its mapped or unmapped (ie minimised
+  or brought back onto the desktop).
+- Added the following BASIC functions:
+	. getchordbyname() 
+	. getsoundbyname()
+	. getarpseqbyname()
+	. getresmodebyname()
+	. getphasingmodebyname()
+	. getringrangemodebyname()
+	. getringmodebyname()
+- Added $effects_seq, $win_mapped, $win_width, $win_height, $sampling_enabled
+- Added SYS:EFFECTS_SEQ, SYS:WIN_WIDTH, SYS:WIN_HEIGHT
+- Removed read only SYS: fields which have become system variables:
+	SYS:MODE -> $mode
+	SYS:SOUND -> $sound_enabled
+	SYS:COM_EXEC_CNT -> $com_exec_cnt
+- Removed read only SYS:NOTE_NAME and SYS:SCALE_NAME as they are duplicates
+  of $note_name and $scale_name
+- Can now save a patch as a BASIC program (it will be set() function calls in 
+  "section init") using the new save button and uppercase 'S' on the keyboard.
+- Load program is now uppercase 'L' instead of ';'. Load patch is lowercase
+  'l'.
+- Randomise can now be done by uppercase 'R'. Resonance switching is now 
+  lowercase 'r' only.
+- Keys that require uppercase presses to operate are underlined with a tilda.
+- Window width and height are now saved in a patch
+- Fixed bug in FOR where an extra loop was executed if the step value skipped
+  caused the variable to skip over the "to" value.
+- Fixed crash bug when playing starts when sampling mode selected but the
+  microphone failed to open at init.
+- Fixed crash bug when loading a program that had an error in it when another
+  program was currently loaded
+- Internal efficienty improvements with BASIC system variables.
+- Miscellanious bug fixes and code improvements.
+
+
+July 2017
+=========
+1.9.1
+- Spread dials and buttons out over a 5th bottom layer for readability, moved
+  the buttons and dials into more logical positions and rationalised the 
+  colours.
+- Added saw flattening functionality.
+- Added FM wierd.
+- Fixed bug that stopped the sine cutoff LFO working.
+- $build_date now in UTC
+
+
+December 2017
+=============
+1.9.2
+- Added dither in sound_gen.c. Not sure it makes much difference.
+
+
+November 2018
+=============
+1.10.0
+- Added experimental OS/X sound support 
+- Reworked sound part of the build system.
+- Added $sound_system variable
+
+
+January 2019
+============
+1.11.0
+- Added OOH and AAH waveforms
+- Fixed random() which rarely returned the max value. Also now returns an 
+  integer, not a float
+
+
+August 2020
+===========
+1.11.1
+- Fixed bug in buttons.c discovered by new compiler.
+- Fixed bug in normalisePatch() - arp_seq cannot be set if arp_mod is zero
+
+
+September 2020
+==============
+1.11.2
+- Tidied up main.c

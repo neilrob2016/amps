@@ -1,0 +1,445 @@
+         *** The Analogue Modelling Painted Sound (AMPS) synthesizer ***
+         ===============================================================
+
+Please read the LICENSE file.
+
+Preamble
+========
+This software is designed to run on Linux using ALSA or Opensound and BSD 
+using Opensound if support. It also has glitchy experimental OS/X sound support
+and it also requires X windows to be installed on OS/X to compile and run. No
+other unix sound system is supported but it might compile and run visuals only
+on other versions of unix if you set SOUND=4 (no sound). There is no current
+or planned future support for Windows.
+
+Compilation
+===========
+Edit the Makefile to set the SOUND variable to the appropriate value which
+has the values 1 to 4 depending on the sound system. Also uncomment any 
+supplementary library variables, then simply type "make".
+
+
+Features
+========
+AMPS is a triphonic synthesizer (but also with chord functionality making
+a possible max of 9 notes at once) that has the following features:
+
+   3 oscillators
+   Sine, Square, Triangle & Sawtooth waveforms 
+   FM
+   Echo
+   Attack & decay envelopes
+   High & low pass filtering
+   Resonance
+   Flanger
+   FM Flanger
+   Phaser
+   Ring modulator
+   Arpeggiator
+   Chord generator
+   Glide/Portamento
+   Vibrato
+   Aliasing
+   Waveform reflection
+   Sine cutoff
+   Square wave pulse width
+   Sawtooth flattening
+   Gain compression
+   Sampler including speeding up and slowing down of samples (the latter using
+       interpolation).
+   Simple events recorder
+   BASIC interpreter allowing sound generation more complex than could be done
+       by LFOs alone.
+
+To play sounds you "paint" with the mouse or use the numeric keys on the
+keyboard. The X axis controls the frequency and the Y axis below the purple 
+filter line controls the filter (either low or high pass) effect. To fix the 
+filter click on the location below the filter line then play notes above it.
+
+There are 3 oscillators - 1 main and 2 sub. The main oscillator waveform is
+controlled by the buttons at the top, the subs are controlled by the SB1 and
+SB2 buttons below. All the oscillators share the same FM and square width
+values , the only difference is that the sub oscillator frequencies are an 
+offset of the main - either Hz or note - and they can be forced to follow the 
+waveform of the main, but not vice verca.
+
+There are 3 LFOs - phasing, filter and vibrato.
+
+There are 11 major scales ranging from A to G# that can be played on the
+virtual keyboard and via the actual computer keyboard. The scale when in notes
+mode is changed using the mouse wheel or the Return key.
+
+The order of the effects can be changed. When the program starts you will
+see the following in the top right hand corner:
+
+	AL->RT->PH->FI->RE->DI->RI
+
+This means the effects go in the order: 
+	Aliasing, reflection, phaser, filter, resonance, distortion, ring mod
+To change this order use the ET and ES buttons.
+
+Note - there is currently NO midi support either input or output.
+
+
+Frequency selection
+===================
+Only one main frequency can be played at a time using either the mouse or
+the computer keyboard. To play more than one you have to either use the sub 
+oscillators with an offset or the chord functionality or both.
+
+There are 3 methods of playing a frequency - continuous (the startup default),
+stepped or notes.
+
+Continuous - The synth will play a frequencies directly related to the current
+             mouse X position.
+Stepped    - As above except the synth will play the nearest valid note
+             frequency which means the Hz gap becomes greater the higher up
+             in frequency you go - ie the relationship of note to mouse X is
+             non linear.
+Notes      - The frequency played is based on the virtual ey pressed and
+             hence the note played is linearly related to mouse X.
+
+
+Mouse control
+=============
+The mouse allows you to play sounds, use the buttons and set the dials.
+Using the right mouse button allows you to only change the filter value
+while allowing you play notes via the keyboard.
+
+For playing:
+	Left button  : Set frequency/note & filter
+	Centre button: Filter only (for when playing notes from keyboard)
+	Right button : Set +1 semitone on/off
+
+For dials:
+	Left button : Drag dial pointer to required value
+        Mid  button : Decrement value by one
+        Right button: Increment value by one
+
+For cycle buttons:
+	Left button  : Go backwards through options
+	Centre button: Switch off
+	Right button : Go forwards through options
+
+
+Events Recording
+================
+AMPS include a simple events recorder/sequencer that will record all the 
+mouse and key presses you make when it is in record mode which can then be
+played back later. The events can be saved in a .amp patch along with the
+patch if the "include in save" button is selected. 
+   There is no limit on the number of events which can be recorded other than
+the amount of memory the OS will allow the program to allocate.
+
+Notes:
+- The recorder does NOT record samples from the microphone, simply keyboard and
+  mouse activity.
+- Recordings that use mouse activity will NOT work correctly when played back
+  by the program running in console mode.
+
+
+Sampling
+========
+Sampling is enabled by selecting the SAMPLE button at the top. Simply plug
+in a microphone then use the mouse to increase or decrease the frequency of
+the recorded data in the same way you would for a note. To increase the
+microphone gain simply use the volume control dial. Currently samples cannot
+be saved.
+
+
+Loading example patch
+=====================
+To load one of the patches in the amps/patches directory press 'L' then
+type in either the full or relative path to the patch from your current 
+location. Alternatively use the -pat command line option.
+
+
+GUI buttons
+===========
+
+Top row
+-------
+At the top of the window are the waveform buttons for the main oscillator
+and also SAMPLE. Sample mode will only work if you have used the -sam command
+line options since it requires the microphone device to be opened and this can
+fail so it is not done by default.
+
+
+1st bottom row
+--------------
+These operate the events recorder
+
+EVR RECORD  (keyboard key = 'V')
+  Press to select record mode. The recording will not start however until the
+  first mouse click or keyboard key press is received. Any events already
+  recorded when this button is pressed will remain in the events list and new
+  events will be added on. If you want to remove then use EVR CLEAR first.
+
+EVR PLAY ('B')
+  Plays all the recorded events. 
+
+EVR PLAY PAUSE (spacebar)
+  Pauses/resumes event play.
+
+EVR LOOP ('N')
+  Switch flag on/off that controls whether at the end of events play the play
+  will start again from the beginning or will loop.
+              
+EVR EVENTS IN SAVE ('M')
+  If this is set then the events patch and the recorded events are saved, not
+  the current main patch.
+
+EVR PATCH RESET (',')
+  If set the the patch is reset to the start condition when the events are
+  played again. Otherwise any patch changes done either during events playback
+  or otherwise are retained when play restarts.
+
+EVR PATCH = MAIN ('.')
+  Set the current events patch to be the same as the main patch. This is
+  irreversable - the events patch is lost. Save it to disk first if you wish
+  to keep it.
+
+EVR CLEAR ('/')
+  Clear all events from the event recorder memory.
+
+2nd bottom row
+--------------
+These buttons are simple ON/OFF types.
+
+SPECTRUM ANALYSER
+  Show a frequency histogram
+
+BUFFER RESET
+  Reset the waveform generation buffers on each iteration.
+
+HIGHPASS FILTER 
+  The default is a lowpass filter. Use this to switch to a highpass one.
+
+ECHO HIGHPASs
+  Use highpass filtering for the echo
+
+HOLD NOTE
+  Continue playing the note even when mouse button or key not pressed.
+
+SUB1/2 NOTES
+  Offset done by note (1 note = 1 step in the current scale either way)
+
+SUBS FOLLOW MAIN
+  When the main waveform is changed make the sub oscillator waveforms change 
+  to match it.
+
+RANDOMISE
+  This randomly changes all settings to create a completely random patch which
+  may occasionally produce a good starting point! Note that it doesn't randomise
+  attack to its full range so that the sound created can be quickly checked.
+
+RESTART BASIC
+  This restarts the BASIC program (if loaded) from the beginning - ie it
+  stops all sections and re-runs the INIT section.
+
+PAUSE BASIC
+  This pauses BASIC on/off
+ 
+
+3rd bottom row
+--------------
+EC  - Echo buffer reset
+EI  - Echo buffer invert. Inverts waveform before written to buffer.
+EL  - Echo buffer length
+ED  - Echo decay
+EF  - Echo filter level
+EST - Echo frequency stretch
+CH  - Cycle through chords
+AR  - Cycle through arpeggiation sequences
+AS1 - Decrease arpeggiation spacing
+AS2 - Increase arpeggiation spacing
+AD1 - Decrease arpeggiation delay
+AD2 - Increase arpeggiation delay
+SB1 - Sub oscillator 1 waveform
+SO1 - Sub 1 offset
+SV1 - Sub 1 volume as a percentage of main oscillator volume
+SB2 - Sub oscillator 2 waveform
+SO1 - Sub 2 offset
+SV2 - Sub 2 volume
+VS  - Vibrato sweep
+VL  - Vibrator LFO
+SC  - Sine cutoff 
+LS  - Sine cutoff LFO
+SW  - Square wave pulse width
+LW  - Square wave pulse width LFO
+SF  - Saw flatten
+SL  - Saw flatten LFO
+
+4th bottom row
+--------------
+FQ -  Frequency mode: NOTES, STEPPED or CONTINUOUS.
+MF  - Max frequency or number of keys depending on above mode
+CS  - Gain compression start
+CE  - Gain compression power curve roll off exponent
+ET  - Effects to swap in the list on the top right of the window.
+ES  - Do the swap
+ER  - Reset effects sequence
+SM1 - Decrease sample mod count. This affects how much interpolation or 
+      snipping is done when a sample is played fast or slow which effects how 
+      closely it maintains its original speed.
+SM2 - Increase sample mod count
+FH  - FM harmonic offset
+FM1 - Multiplication of main frequency for FM wave 1 (can have 2 waves at once)
+FM2 - Multiplication of main frequency for FM wave 2
+FO  - FM offset
+FV1 - Volume of FM wave 1
+FV2 - Volume of FM wave 2
+FW  - FM wierd effect 
+PH  - Cycle through phasing modes
+PO  - Phasing offset
+PS  - Phasing sweep
+PL  - Phasing LFO
+PF  - Phaser frequency seperation
+PD  - Phaser low frequency offset mult
+FS  - Filter sweep
+FL  - Filter LFO
+RT  - Reflection level
+RS  - Reflection smoothing
+
+5th bottom row
+--------------
+RE  - Resonance mode
+RL  - Resonance level
+RF  - Resonance frequency
+RD  - Resonance damping
+GD  - Glide distance
+GV  - Glide velocity
+DI  - Distortion
+AL  - Aliasing
+RI  - Ring modulator range
+RM  - Ring mode (waveform)
+IL  - Ring modulator level
+IF  - Ring modulator frequency
+AT  - Attack length
+DE  - Decay length
+VOL - Main volume
+SAR - Spectrum analyser max frequency 
+SVP - Save the current patch as a binary file. This also saves recorded events.
+SVB - Save the current patch as a BASIC program. Unlike the binary save this 
+      does not save recorded events.
+LDP - Load a patch.
+LDB - Load a BASIC program (clicked twice it will reload last program again)
+RST - Reset
+QU  - Quit
+
+Keyboard control
+================
+
+Most keys are case insensitive except for s/S and l/L.
+
+Escape    : Once is reset, twice is quit
+TAB       : Cycle through main oscillator sounds 
+Return    : Cycle up through musical scales 
+a/A       : Cycle through arpeggiation patterns 
+b/B       : Play events
+c/C       : Cycle through chords 
+e/E       : Swap effects positions (chosen by key T) in the effects list
+f/F       : Cycle through continuous/stepped/notes method of setting frequency
+g/G       : Reset effects sequence
+h/H       : Hold note on/off 
+i/I       : Fill in waveform on/off
+j/J       : Cycle through sub oscillator 1 sounds 
+k/K       : Cycle through sub oscillator 2 sounds
+l         : Load a BASIC program. The file matching applies as above except
+            with ".bas" instead of ".amp"
+L         : Load a patch ('*' and '?' wildcards are supported and it loads the
+            first file with .amp on the end that matches).
+            However if you append '/' onto the end of a path then instead of 
+            loading a patch you'll get a directory listing of the patches
+            available in the path given assuming its a directory.
+m/M       : Cycle through ring modulator range
+n/N       : Events looping on/off
+o/O       : Events patch reset at start of play on/off
+p/P       : Cycle through phasing modes
+r         : Cycle through resonance modes
+R         : Randomise settings
+s         : Save current patch in as a BASIC program consisting of set()
+            calls in a "section init".
+S         : Save current patch in binary format.
+t/T       : Cycle through effects to swap to change their order (key E)
+v/V       : Record events
+w/W       : Freeze waveform on/off
+x/X       : Increase volume 
+z/Z       : Decrease volume
+','       : Save events patch and data on/off
+'.'       : Set current events patch to main patch
+'/'       : Events clear
+'#'       : Show BASIC section status and line number 
+'['       : Restart BASIC
+']'       : Pause BASIC
+'?'       : Show credits
+Space     : Events playback pause
+F1-F12    : Captured by BASIC to use for user defined events
+Arrow keys: Change the current keyboard note start.
+0-9,-,=   : These allow you to play 12 notes via the keyboard. The starting
+            note can be changed using the key start note dial or the arrow keys.
+          
+
+Console mode
+============
+If you use the -con command line option the program will run off the command
+line console instead of bringing up an X window. This mode has limited 
+functionality and is really there simply for the sake of completeness. For 
+example you can't change any values that rely on dials and the key release times
+are hard coded since the unix terminal I/O subsystem doesn't provide any way
+to know when a key release events has occured and hence AMPS has to guess.
+
+
+ALSA issues
+===========
+The program assumes "sysdefault" is the default ALSA device. However it might
+not be on some systems so use the -adev option to change it. Get a list of
+the devices on the command line using the "aplay -L" command. To use ALSA
+uncomment the ALSA_ sections at the top of the Makefile.
+
+
+OpenSound issues
+================
+This program supports the old OpenSound System. However there can be 
+differences in implementation of OSS depending on how old the version of
+Linux you are using is. Some implementations return immediately from a
+write() and so require a delay to function properly, others do the delay
+themselves. Since its impossible to know which is which there is a command
+line option -wrd (write delay) that you should use if you find the program
+is very sluggish when using OSS (which is due to far too much data being
+written due to write() always returning immediately). It has a default value
+but you may need to use your own and I'm afraid finding it is trial and error
+but once you have found it it won't need to be changed.
+
+To use OSS comment out the ALSA= section in the Makefile and recompile.
+
+To user OSS on newer versions of linux you will need the snd_mixer_oss and
+snd_pcm_oss modules loaded.
+
+
+OS/X issues
+===========
+The software was designed for the Linux sound drivers which use a somewhat 
+different audio model to OS/X. This means that while sound on OS/X does work it
+has lots of glitches which I suspect are down to race conditions and/or buffer
+data exhaustion though I'm not 100% sure.
+
+
+Patches
+=======
+There are a number of ready made patches in the "patches" directory for 
+you to try out including 2 with saved events called tune1 and tune2. Though
+calling them "tunes" is perhaps overstating the matter somewhat. You can either
+load a patch from the command line using -pat or when the program is running.
+
+
+BASIC
+=====
+Since version 1.5.0 AMPS has a built in BASIC interpreter. Read the README_BASIC
+file for more information about this.
+
+
+Feedback
+========
+Please email me at neilrob2016@gmail.com with any bugs, fixes, ideas or general
+feedback.
