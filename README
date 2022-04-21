@@ -44,6 +44,8 @@ a possible max of 9 notes at once) that has the following features:
    Sine cutoff
    Square wave pulse width
    Sawtooth flattening
+   Morph to sinewave for main oscillator
+   Morph to sinewave for overall waveform before effects added
    Gain compression
    Sampler including speeding up and slowing down of samples (the latter using
        interpolation).

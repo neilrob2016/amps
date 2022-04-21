@@ -66,6 +66,8 @@ void setupButtons()
 		case BUT_SAMPLE_MOD_INC:
 		case BUT_FILTER_SWEEP:
 		case BUT_FILTER_LFO:
+		case BUT_MORPH_MAIN:
+		case BUT_MORPH_GLOBAL:
 			col = ORANGE;
 			break;
 
@@ -525,6 +527,14 @@ void resetButtons(int init, int reset_evr)
 
 		case BUT_RING_LEVEL:
 			button[i].angle = shm->ring_level;
+			break;
+
+		case BUT_MORPH_MAIN:
+			button[i].angle = shm->morph_main;
+			break;
+
+		case BUT_MORPH_GLOBAL:
+			button[i].angle = shm->morph_global;
 			break;
 
 		case BUT_ATTACK:
@@ -1396,6 +1406,18 @@ void doButtonAction(int mouse_button, int but, double angle, int bas_on)
 		runEventSection(SECTION_DIAL,but,shm->ring_level,NULL);
 		break;
 
+	case BUT_MORPH_MAIN:
+		setFieldToDialAngle(&shm->morph_main,BUT_MORPH_MAIN);
+		message("Morph main osc to sine = %d",shm->morph_main);
+		runEventSection(SECTION_DIAL,but,shm->morph_main,NULL);
+		break;
+
+	case BUT_MORPH_GLOBAL:
+		setFieldToDialAngle(&shm->morph_global,BUT_MORPH_GLOBAL);
+		message("Morph waveform to sine = %d",shm->morph_global);
+		runEventSection(SECTION_DIAL,but,shm->morph_global,NULL);
+		break;
+
 	case BUT_ATTACK:
 		setFieldToDialAngle(&shm->attack,BUT_ATTACK);
 		message("Attack = %d",shm->attack);
@@ -1761,6 +1783,12 @@ double getButtonValue(int but)
 
 	case BUT_ALIASING:
 		return shm->aliasing;
+
+	case BUT_MORPH_MAIN:
+		return shm->morph_main;
+
+	case BUT_MORPH_GLOBAL:
+		return shm->morph_global;
 
 	case BUT_ATTACK:
 		return shm->attack;

@@ -77,6 +77,7 @@ double getSubOscFreq(
 	short freq,
 	short freq_add,
 	int main_note);
+void morphToSine(int mchan, double vol, double freq, u_char level);
 
 void clearEchoBuffer();
 void checkEcho();
@@ -285,7 +286,9 @@ void soundReset()
 void resetSoundChannels()
 {
 	bzero(sin_ang,sizeof(sin_ang));
-	bzero(sin_ang,sizeof(sin_ang));
+	bzero(sin_ang_morph,sizeof(sin_ang_morph));
+	bzero(sin_fm_ang1,sizeof(sin_fm_ang1));
+	bzero(sin_fm_ang2,sizeof(sin_fm_ang2));
 	bzero(tri_val,sizeof(tri_val));
 	bzero(tri_inc,sizeof(tri_inc));
 	bzero(sq_vol,sizeof(sq_vol));
@@ -294,8 +297,6 @@ void resetSoundChannels()
 	bzero(saw_val,sizeof(saw_val));
 	bzero(saw_flatten_cnt,sizeof(saw_flatten_cnt));
 	bzero(saw_flatten_step_cnt,sizeof(saw_flatten_step_cnt));
-	bzero(sin_fm_ang1,sizeof(sin_fm_ang1));
-	bzero(sin_fm_ang2,sizeof(sin_fm_ang2));
 	bzero(wav_pos,sizeof(wav_pos));
 }
 
@@ -511,6 +512,10 @@ void createSound()
 		else if (sndbuff[i] < -peak_volume) 
 			peak_volume = -sndbuff[i];
 	}
+
+	/* Morph the resulting waveform before we add effects */
+	if (shm->morph_global)
+		morphToSine(MCHAN_GLOBAL,peak_volume,g_freq,shm->morph_global);
 
 	/* Call the order swappable effects functions */
 	for(i=0;i < NUM_SWAP_EFFECTS;++i) 
@@ -745,10 +750,12 @@ void generateWaveform(int bank, short freq, int volume, int reset)
 	short fm_vol1;
 	short fm_vol2;
 	short freq_add;
+	int channel;
 	int note;
 	int sine_cutoff_ang;
 
-	bank *= 3;
+	/* Bank 0 is basic note, 1 is 2nd chord note, 2 is 3rd chord note */
+	channel = bank * 3;
 	note = 0;
 	freq_add = 0;
 	fm_harm = shm->fm_harm_offset - MAX_CHAR;
@@ -802,13 +809,13 @@ void generateWaveform(int bank, short freq, int volume, int reset)
 	{
 	case SND_SINE_FM:
 		addSineFM(
-			0+bank,
+			channel,
 			volume,
 			main_freq,
 			fm_vol1,
 			main_freq*fm_mult1,fm_vol_exp,sine_cutoff_ang,reset);
 		addSineFM(
-			1+bank,
+			channel+1,
 			volume,
 			main_freq+fm_harm,
 			fm_vol2,
@@ -817,27 +824,27 @@ void generateWaveform(int bank, short freq, int volume, int reset)
 		break;
 
 	case SND_SINE:
-		addSine(0+bank,volume,main_freq,sine_cutoff_ang,reset);
+		addSine(channel,volume,main_freq,sine_cutoff_ang,reset);
 		break;
 
 	case SND_SQUARE:
-		addSquare(0+bank,volume,main_freq,square_width,reset);
+		addSquare(channel,volume,main_freq,square_width,reset);
 		break;
 
 	case SND_TRIANGLE:
-		addTriangle(0+bank,volume,main_freq,reset);
+		addTriangle(channel,volume,main_freq,reset);
 		break;
 
 	case SND_SAWTOOTH:
-		addSawtooth(0+bank,volume,main_freq,saw_flatten_ratio,reset);
+		addSawtooth(channel,volume,main_freq,saw_flatten_ratio,reset);
 		break;
 
 	case SND_AAH:
-		addWav(0+bank,WAV_AAH,wav_volume,main_freq,reset);	
+		addWav(channel,WAV_AAH,wav_volume,main_freq,reset);	
 		break;
 
 	case SND_OOH:
-		addWav(0+bank,WAV_OOH,wav_volume,main_freq,reset);	
+		addWav(channel,WAV_OOH,wav_volume,main_freq,reset);	
 		break;
 
 	case SND_NOISE:
@@ -853,6 +860,10 @@ void generateWaveform(int bank, short freq, int volume, int reset)
 	default:
 		break;
 	}
+
+	/* Morph main waveform, not sub oscillators or chord notes */
+	if (channel == MAIN_CHANNEL && shm->morph_main)
+		morphToSine(MCHAN_MAIN,volume,freq,shm->morph_main);
 
 	if (shm->sub1_note_offset || shm->sub2_note_offset)
 	{
@@ -872,7 +883,7 @@ void generateWaveform(int bank, short freq, int volume, int reset)
 		{
 		case SND_SINE_FM:
 			addSineFM(
-				2+bank,
+				channel+2,
 				sub_vol,
 				sub_freq,
 				fm_vol1,
@@ -881,29 +892,29 @@ void generateWaveform(int bank, short freq, int volume, int reset)
 			break;
 
 		case SND_SINE:
-			addSine(1+bank,sub_vol,sub_freq,sine_cutoff_ang,0);
+			addSine(channel+1,sub_vol,sub_freq,sine_cutoff_ang,0);
 			break;
 
 		case SND_SQUARE:
-			addSquare(1+bank,sub_vol,sub_freq,square_width,0);
+			addSquare(channel+1,sub_vol,sub_freq,square_width,0);
 			break;
 
 		case SND_TRIANGLE:
-			addTriangle(1+bank,sub_vol,sub_freq,0);
+			addTriangle(channel+1,sub_vol,sub_freq,0);
 			break;
 
 		case SND_SAWTOOTH:
-			addSawtooth(1+bank,sub_vol,sub_freq,saw_flatten_ratio,0);
+			addSawtooth(channel+1,sub_vol,sub_freq,saw_flatten_ratio,0);
 			break;
 
 		case SND_AAH:
 			sub_vol = wav_volume * (double)shm->sub1_vol / MAX_UCHAR;
-			addWav(1+bank,WAV_AAH,sub_vol,sub_freq,0);	
+			addWav(channel+1,WAV_AAH,sub_vol,sub_freq,0);	
 			break;
 
 		case SND_OOH:
 			sub_vol = wav_volume * (double)shm->sub1_vol / MAX_UCHAR;
-			addWav(1+bank,WAV_OOH,sub_vol,sub_freq,0);	
+			addWav(channel+1,WAV_OOH,sub_vol,sub_freq,0);	
 			break;
 
 		case SND_NOISE:
@@ -934,29 +945,29 @@ void generateWaveform(int bank, short freq, int volume, int reset)
 			break;
 
 		case SND_SINE:
-			addSine(2+bank,sub_vol,sub_freq,sine_cutoff_ang,0);
+			addSine(channel+2,sub_vol,sub_freq,sine_cutoff_ang,0);
 			break;
 
 		case SND_SQUARE:
-			addSquare(2+bank,sub_vol,sub_freq,square_width,0);
+			addSquare(channel+2,sub_vol,sub_freq,square_width,0);
 			break;
 
 		case SND_TRIANGLE:
-			addTriangle(2+bank,sub_vol,sub_freq,0);
+			addTriangle(channel+2,sub_vol,sub_freq,0);
 			break;
 
 		case SND_SAWTOOTH:
-			addSawtooth(2+bank,sub_vol,sub_freq,saw_flatten_ratio,0);
+			addSawtooth(channel+2,sub_vol,sub_freq,saw_flatten_ratio,0);
 			break;
 
 		case SND_AAH:
 			sub_vol = wav_volume * (double)shm->sub2_vol / MAX_UCHAR;
-			addWav(2+bank,WAV_AAH,sub_vol,sub_freq,0);	
+			addWav(channel+2,WAV_AAH,sub_vol,sub_freq,0);	
 			break;
 
 		case SND_OOH:
 			sub_vol = wav_volume * (double)shm->sub2_vol / MAX_UCHAR;
-			addWav(2+bank,WAV_OOH,sub_vol,sub_freq,0);	
+			addWav(channel+2,WAV_OOH,sub_vol,sub_freq,0);	
 			break;
 
 		case SND_NOISE:
@@ -1013,6 +1024,29 @@ double getSubOscFreq(
 	else if (sub_freq > MAX_SHORT) sub_freq = MAX_SHORT;
 
 	return round(sub_freq * glide_freq_mult);
+}
+
+
+
+
+/*** Morph whatever is in the sound buffer towards a sine wave. Sawtooth
+     can already be morphed towards a square using the flatten operator ***/
+void morphToSine(int mchan, double vol, double freq, u_char level)
+{
+	double ang_inc;
+	double diff;
+	int i;
+
+	if (freq < 1) freq = 1;
+	ang_inc = 360 / ((double)pcm_freq / freq);
+	for(i=0;i < SNDBUFF_SIZE;++i)
+	{
+		/* Get position between sval and current sound buff pos value 
+		   based on level */
+		diff = vol * SIN(sin_ang_morph[mchan]) - sndbuff[i];
+		sndbuff[i] += diff * ((double)level / 255);
+		incAngle(&sin_ang_morph[mchan],ang_inc);
+	}
 }
 
 

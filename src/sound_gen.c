@@ -41,6 +41,11 @@ void addSine(int ch, double vol, double freq, int cutoff_ang1, int reset)
 
 	if (freq < 1) freq = 1;
 	if (reset) resetSoundBuffer();
+	if (ch == MAIN_CHANNEL)
+	{
+		sin_ang_morph[MCHAN_MAIN] = sin_ang[ch];
+		sin_ang_morph[MCHAN_GLOBAL] = sin_ang[ch];
+	}
 
 	ang_inc = 360 / ((double)pcm_freq / freq);
 	cutoff_ang2 = cutoff_ang1 + 180;

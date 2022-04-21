@@ -27,6 +27,11 @@
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/keysym.h>
+#include <X11/extensions/Xdbe.h>
+
 #define ALSA      1
 #define OPENSOUND 2
 #define OSX       3
@@ -43,16 +48,17 @@
 #include "AudioToolbox/AudioToolbox.h"
 #endif
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <X11/extensions/Xdbe.h>
-
 #include "build_date.h"
 
-#define COPYRIGHT1   "Copyright (C) Neil Robertson 2013-2020"
-#define COPYRIGHT2   "AMPS SYNTH - COPYRIGHT (C) NEIL ROBERTSON 2013-2020"
-#define VERSION      "1.11.2"
+#ifdef MAINFILE
+#define EXTERN
+#else
+#define EXTERN extern
+#endif
+
+#define COPYRIGHT1   "Copyright (C) Neil Robertson 2013-2022"
+#define COPYRIGHT2   "AMPS SYNTH - COPYRIGHT (C) NEIL ROBERTSON 2013-2022"
+#define VERSION      "1.12.0"
 #define PATCH_SUFFIX ".amp"
 
 #define STDIN       0
@@ -111,6 +117,8 @@
 
 #define USEC_LOOP_DELAY  (u_int)20000
 
+#define MAIN_CHANNEL 0
+
 /* Used for timing double escape key press and double BASIC load click. 
    50 = 1 second if USEC_LOOP_DELAY = 20000 usecs */
 #define PRESS_TIMEOUT_CNT 50
@@ -150,115 +158,147 @@ enum en_button_type
 
 enum en_button
 {
-	/* Top layer */
+	/* 0: Top layer */
 	BUT_SINE_FM,
 	BUT_SINE,
 	BUT_SQUARE,
 	BUT_TRIANGLE,
 	BUT_SAWTOOTH,
+
+	/* 5 */
 	BUT_AAH,
 	BUT_OOH,
 	BUT_NOISE,
 	BUT_SAMPLE,
+	BUT_EVR_RECORD, /* Bottom layer 1 */
 
-	/* Bottom layer 1 */
-	BUT_EVR_RECORD,
+	/* 10 */
 	BUT_EVR_PLAY,
 	BUT_EVR_PLAY_PAUSE,
 	BUT_EVR_LOOP,
 	BUT_EVR_EVENTS_IN_SAVE,
 	BUT_EVR_PATCH_RESET,
+
+	/* 15 */
 	BUT_EVR_PATCH_EQ_MAIN,
 	BUT_EVR_CLEAR,
-
-	/* Bottom layer 2 */
-	BUT_SPECTRUM_ANALYSER,
+	BUT_SPECTRUM_ANALYSER, /* Bottom layer 2 */
 	BUT_BUFFER_RESET,
 	BUT_HIGHPASS_FILTER,
+
+	/* 20 */
 	BUT_ECHO_HIGHPASS_FILTER,
 	BUT_HOLD_NOTE,
 	BUT_SUB1_NOTE_OFFSET,
 	BUT_SUB2_NOTE_OFFSET,
 	BUT_SUBS_FOLLOW,
+
+	/* 25 */
 	BUT_RANDOMISE,
 	BUT_RESTART_PROG,
 	BUT_PAUSE_PROG,
 	BUT_DEL_PROG,
+	BUT_ECHO_CLEAR, /* Bottom layer 3 */
 
-	/* Bottom layer 3 */
-	BUT_ECHO_CLEAR,
+	/* 30 */
 	BUT_ECHO_INVERT,
 	BUT_ECHO_LEN,
 	BUT_ECHO_DECAY,
 	BUT_ECHO_FILTER,
 	BUT_ECHO_STRETCH,
+
+	/* 35 */
 	BUT_CHORD,
 	BUT_ARP_SEQ,
 	BUT_ARP_SPACING_DEC,
 	BUT_ARP_SPACING_INC,
 	BUT_ARP_DELAY_DEC,
+
+	/* 40 */
 	BUT_ARP_DELAY_INC,
 	BUT_SUB1_SOUND,
 	BUT_SUB1_OFFSET,
 	BUT_SUB1_VOL,
 	BUT_SUB2_SOUND,
+
+	/* 45 */
 	BUT_SUB2_OFFSET,
 	BUT_SUB2_VOL,
 	BUT_VIB_SWEEP,
 	BUT_VIB_LFO,
 	BUT_SINE_CUTOFF,
+
+	/* 50 */
 	BUT_SINE_CUTOFF_LFO,
 	BUT_SQUARE_WIDTH,
 	BUT_SQUARE_WIDTH_LFO,
 	BUT_SAW_FLATTEN,
 	BUT_SAW_FLATTEN_LFO,
 
-	/* Bottom layer 4 */
+	/* 55: Bottom layer 4 */
 	BUT_FREQ_MODE,
 	BUT_MAX_FREQ,
 	BUT_COMPRESS_START,
 	BUT_COMPRESS_EXP,
 	BUT_EFFECTS_TO_SWAP,
+
+	/* 60 */
 	BUT_SWAP_EFFECTS,
 	BUT_RESET_EFFECTS_SEQ,
 	BUT_SAMPLE_MOD_DEC,
 	BUT_SAMPLE_MOD_INC,
 	BUT_FM_HARM_OFFSET,
+
+	/* 65 */
 	BUT_FM_MULT1,
 	BUT_FM_MULT2,
 	BUT_FM_OFFSET,
 	BUT_FM_VOL1,
 	BUT_FM_VOL2,
+
+	/* 70 */
 	BUT_FM_WIERD,
 	BUT_PHASING_MODE,
 	BUT_PHASING_OFFSET,
 	BUT_PHASING_SWEEP,
 	BUT_PHASING_LFO,
+
+	/* 75 */
 	BUT_PHASER_FREQ_SEP,
 	BUT_PHASER_LOW_OFF_MULT,
 	BUT_FILTER_SWEEP,
 	BUT_FILTER_LFO,
 	BUT_REFLECT_LEVEL,
-	BUT_REFLECT_SMOOTHING,
 
-	/* Bottom layer 5 */
-	BUT_RES_MODE,
+	/* 80 */
+	BUT_REFLECT_SMOOTHING,
+	BUT_RES_MODE, /* Bottom layer 5 */
 	BUT_RES_LEVEL,
 	BUT_RES_FREQ,
 	BUT_RES_DAMPING,
+
+	/* 85 */
 	BUT_GLIDE_DISTANCE,
 	BUT_GLIDE_VELOCITY,
 	BUT_DISTORTION,
 	BUT_ALIASING,
 	BUT_RING_RANGE,
+
+	/* 90 */
 	BUT_RING_MODE,
 	BUT_RING_LEVEL,
 	BUT_RING_FREQ,
+	BUT_MORPH_MAIN,
+	BUT_MORPH_GLOBAL,
+
+	/* 95 */
 	BUT_ATTACK,
 	BUT_DECAY,
 	BUT_VOLUME,
 	BUT_ANALYSER_RANGE,
 	BUT_SAVE_PATCH,
+
+	/* 100 */
 	BUT_SAVE_PROG,
 	BUT_LOAD_PATCH,
 	BUT_LOAD_PROG,
@@ -276,6 +316,14 @@ enum en_wav_sounds
 	NUM_WAV_SOUNDS
 };
 	
+enum en_morph_chan
+{
+	MCHAN_MAIN,
+	MCHAN_GLOBAL,
+
+	NUM_MORPH_CHANS
+};
+
 #define TOP_BUTTONS_END BUT_SAMPLE
 #define NUM_TOP_BUTTONS (TOP_BUTTONS_END+1)
 
@@ -322,16 +370,17 @@ struct st_waveform
 	short data[1];
 };
 
-struct st_waveform *waveform[NUM_WAV_SOUNDS];
+EXTERN struct st_waveform *waveform[NUM_WAV_SOUNDS];
 
 struct st_point
 {
 	short x;
 	short y;
 	int colour;
-} tail[TAIL_LEN];
+};
 
-int tail_next;
+EXTERN struct st_point tail[TAIL_LEN];
+EXTERN int tail_next;
 
 struct st_button
 {
@@ -352,120 +401,152 @@ struct st_button
 	char *underline_text;
 };
 
-struct st_button button[NUM_BUTTONS];
+EXTERN struct st_button button[NUM_BUTTONS];
 
 #ifdef MAINFILE
 char *button_name[NUM_BUTTONS] =
 {
-	/* Top layer */
+	/* 0: Top layer */
 	"SINE FM",
 	"SINE",
 	"SQUARE",
 	"TRIANGLE",
 	"SAWTOOTH",
+
+	/* 5 */
 	"AAH",
 	"OOH",
 	"NOISE",
 	"SAMPLE",
+	"EVR RECORD", /* Bottom layer 1 */
 
-	/* Bottom layer 1 */
-	"EVR RECORD",
+	/* 10 */
 	"EVR PLAY",
 	"EVR PLAY PAUSE",
 	"EVR LOOP",
 	"EVR EVENTS IN SAVE",
 	"EVR PATCH RESET",
+
+	/* 15 */
 	"EVR PATCH = MAIN",
 	"EVR CLEAR",
-
-	/* Bottom layer 2 */
-	"SPECTRUM ANALYSER",
+	"SPECTRUM ANALYSER", /* Bottom layer 2 */
 	"BUFFER RESET",
 	"HIGHPASS FILTER",
+
+	/* 20 */
 	"ECHO HIGHPASS FILTER",
 	"HOLD NOTE",
 	"SUB1 NOTES",
 	"SUB2 NOTES",
 	"SUBS FOLLOW MAIN",
+
+	/* 25 */
 	"RANDOMISE",
 	"RESTART PROG",
 	"PAUSE PROG",
 	"DEL PROG",
+	"EC", /* Bottom layer 3 */
 
-	/* Bottom layer 3 */
-	"EC",
+	/* 30 */
 	"EI",
 	"EL",
 	"ED",
 	"EF",
 	"EST",
+
+	/* 35 */
 	"CH",
 	"AR",
 	"AS1",
 	"AS2",
 	"AD1",
+
+	/* 40 */
 	"AD2",
 	"SB1",
 	"SO1",
 	"SV1",
 	"SB2",
+
+	/* 45 */
 	"SO2",
 	"SV2",
 	"VS",
 	"VL",
 	"SC",
+
+	/* 50 */
 	"LS",
 	"SW",
 	"LW",
 	"SF",
 	"SL",
 
-	/* Bottom layer 4 */
+	/* 55: Bottom layer 4 */
 	"FQ",
 	"MF",
 	"CS",
 	"CE",
 	"ET",
+
+	/* 60 */
 	"ES", 
 	"ER",
 	"SM1",
 	"SM2",
 	"FH",
+
+	/* 65 */
 	"FM1",
 	"FM2",
 	"FO",
 	"FV1",
 	"FV2",
+
+	/* 70 */
 	"FW",
 	"PH",
 	"PO",
 	"PS",
 	"PL",
+
+	/* 75 */
 	"PF",
 	"PD",
 	"FS",
 	"FL",
 	"RT",
-	"RS",
 
-	/* Bottom layer 5 */
-	"RE",
+	/* 80 */
+	"RS",
+	"RE", /* Bottom layer 5 */
 	"RL",
 	"RF",
 	"RD",
+
+	/* 85 */
 	"GD",
 	"GV",
 	"DI",
 	"AL",
 	"RI",
+
+	/* 90 */
 	"RM",
 	"IL",
 	"IF",
+	"MOM",
+	"MOG",
+
+	/* 95 */
 	"AT",
 	"DE",
 	"VOL",
 	"SAR",
 	"SVP",
+
+	/* 100 */
 	"SVB",
 	"LDP",
 	"LDB",
@@ -521,68 +602,69 @@ extern char *button_name[NUM_BUTTONS];
 	else \
 	sndbuff[POS] = (short)res;
 
-u_int pcm_freq;
+EXTERN u_int pcm_freq;
 	
 /* PCM buffers */
-short *sndbuff;
-short freeze_sndbuff[SNDBUFF_SIZE];
-short echobuff[ECHOBUFF_SIZE];
-short phasingbuff[PHASINGBUFF_SIZE];
+EXTERN short *sndbuff;
+EXTERN short freeze_sndbuff[SNDBUFF_SIZE];
+EXTERN short echobuff[ECHOBUFF_SIZE];
+EXTERN short phasingbuff[PHASINGBUFF_SIZE];
 
 #if SOUND==ALSA
-char *alsa_device;
-snd_pcm_t *handle;
-snd_pcm_t *mic_handle;
+EXTERN char *alsa_device;
+EXTERN snd_pcm_t *handle;
+EXTERN snd_pcm_t *mic_handle;
 #elif SOUND==OPENSOUND
-int sndfd;
+EXTERN int sndfd;
 #elif SOUND==OSX
 #define NUM_OSX_BUFFERS 3
-AudioQueueRef osx_queue;
-AudioQueueBufferRef *osx_buffer;
-int num_osx_buffers;
-int osx_buff_num;
+EXTERN AudioQueueRef osx_queue;
+EXTERN AudioQueueBufferRef *osx_buffer;
+EXTERN int num_osx_buffers;
+EXTERN int osx_buff_num;
 #endif
 
 /* Sound generation vars */
-double sin_ang[NUM_CHANS];
-double sin_fm_ang1[NUM_CHANS];
-double sin_fm_ang2[NUM_CHANS];
+EXTERN double sin_ang[NUM_CHANS];
+EXTERN double sin_fm_ang1[NUM_CHANS];
+EXTERN double sin_fm_ang2[NUM_CHANS];
+EXTERN double sin_ang_morph[NUM_MORPH_CHANS];
 
-double tri_val[NUM_CHANS];
-double tri_inc[NUM_CHANS];
+EXTERN double tri_val[NUM_CHANS];
+EXTERN double tri_inc[NUM_CHANS];
 
-double sq_vol[NUM_CHANS];
-double sq_cnt[NUM_CHANS];
-double sq_next_edge[NUM_CHANS];
+EXTERN double sq_vol[NUM_CHANS];
+EXTERN double sq_cnt[NUM_CHANS];
+EXTERN double sq_next_edge[NUM_CHANS];
 
-double saw_val[NUM_CHANS];
-double saw_flatten_cnt[NUM_CHANS];
-int    saw_flatten_step_cnt[NUM_CHANS];
+EXTERN double saw_val[NUM_CHANS];
+EXTERN double saw_flatten_cnt[NUM_CHANS];
+EXTERN int    saw_flatten_step_cnt[NUM_CHANS];
 
-double wav_pos[NUM_CHANS];
+EXTERN double wav_pos[NUM_CHANS];
 
-double noise_prev_res;
-double vibrato_sweep_ang;
+EXTERN double noise_prev_res;
+EXTERN double vibrato_sweep_ang;
 
-double ring_sin_ang;
-double ring_sin_inc;
-double ring_tri_mult;
-double ring_tri_inc;
-double ring_tri_min;
-double ring_saw_inc;
-double ring_saw_mult;
-double ring_saw_min;
-double ring_sq_do_mult;
-double ring_sq_period;
-double ring_sq_next_edge;
-double ring_tri_prev_dist;
-double ring_saw_prev_dist;
-int ring_sine_prev_freq;
-int ring_sqr_prev_freq;
-int ring_tri_prev_freq;
-int ring_saw_prev_freq;
+EXTERN double ring_sin_ang;
+EXTERN double ring_sin_inc;
+EXTERN double ring_tri_mult;
+EXTERN double ring_tri_inc;
+EXTERN double ring_tri_min;
+EXTERN double ring_saw_inc;
+EXTERN double ring_saw_mult;
+EXTERN double ring_saw_min;
+EXTERN double ring_sq_do_mult;
+EXTERN double ring_sq_period;
+EXTERN double ring_sq_next_edge;
+EXTERN double ring_tri_prev_dist;
+EXTERN double ring_saw_prev_dist;
+EXTERN int ring_sine_prev_freq;
+EXTERN int ring_sqr_prev_freq;
+EXTERN int ring_tri_prev_freq;
+EXTERN int ring_saw_prev_freq;
 
-int prev_note_scale;
+EXTERN int prev_note_scale;
 
 enum en_note_scale
 {
@@ -740,16 +822,16 @@ extern char *scale_short_name[NUM_SCALES];
 extern char scale_letter[NUM_SCALES][OCTAVE];
 #endif
 
-int note_freq_scale[NUM_SCALES][NUM_NOTES];
-int *note_freq;
-int middle_c;
+EXTERN int note_freq_scale[NUM_SCALES][NUM_NOTES];
+EXTERN int *note_freq;
+EXTERN int middle_c;
 
-u_int dft_freq_level[MAX_UCHAR];
+EXTERN u_int dft_freq_level[MAX_UCHAR];
 
-double freq_range_mult;
-double key_spacing;
-double key_char_add;
-int key_cnt;
+EXTERN double freq_range_mult;
+EXTERN double key_spacing;
+EXTERN double key_char_add;
+EXTERN int key_cnt;
 
 /* Effects order swapping */
 struct st_swap_pos
@@ -816,8 +898,9 @@ struct st_params
 
 	/* For future use */
 	u_char spare2[2];
-} params;
+}; 
 
+EXTERN struct st_params params;
 	
 /* Shared mem control params for child/sound process */
 struct st_sharmem
@@ -909,13 +992,19 @@ struct st_sharmem
 	u_char saw_flatten_lfo;
 	u_char fm_wierd;
 
+	/* New for 1.12.0 */
+	u_char morph_main;
+	u_char morph_global;
+
 	/* For future use */
-	u_char spare[3];
+	u_char spare;
 
 	u_char effects_seq[NUM_SWAP_EFFECTS];
 
 	short sndbuff[SNDBUFF_SIZE];
-} *shm;
+};
+
+EXTERN struct st_sharmem *shm;
 
 #define RANDOMISE_START &shm->note_scale
 #define RANDOMISE_END   &shm->fm_wierd
@@ -1186,13 +1275,13 @@ extern char *onoff[2];
 #endif
 
 /* General globals */
-char build_options[100];
-char sound_system[20];
-double boot_time;
+EXTERN char build_options[100];
+EXTERN char sound_system[20];
+EXTERN double boot_time;
 
 /******************************* RECORDER ************************************/
 
-enum en_recorder_state_flags
+EXTERN enum en_recorder_state_flags
 {
 	RECORDER_STOPPED,
 	RECORDER_RECORD,
@@ -1213,19 +1302,22 @@ struct st_recorder_event
 	u_char type;
 	char key_mb;  /* Dual key and mouse button */
 	u_char spare;  /* For future use */
-} *evr_events;
+};
+
+EXTERN struct st_recorder_event *evr_events;
 
 struct st_recorder_flags
 {
 	u_char loop:1;
 	u_char patch_reset:1;
 	u_char events_in_save:1;
-} evr_flags;
+};
 
-u_int evr_events_cnt;
-u_int evr_next_play_event;
-struct st_params evr_params;
-struct st_sharmem evr_sharmem;
+EXTERN struct st_recorder_flags evr_flags;
+EXTERN u_int evr_events_cnt;
+EXTERN u_int evr_next_play_event;
+EXTERN struct st_params evr_params;
+EXTERN struct st_sharmem evr_sharmem;
 
 #ifdef MAINFILE
 char *evr_state_name[NUM_RECORDER_STATES] =
@@ -1256,7 +1348,9 @@ struct st_disk
 	int pos;
 	/* PATH_MAX because it can include the home directory as a ~ */
 	char filename[PATH_MAX+1];
-} disk;
+};
+
+EXTERN struct st_disk disk;
 	
 
 /********************** Text & character definitions *************************/
@@ -1274,9 +1368,10 @@ struct st_mesg
 	double col;
 	double x_scale;
 	double y_scale;
-} mesg[MAX_MESGS];
+};
 
-int next_mesg;
+EXTERN struct st_mesg mesg[MAX_MESGS];
+EXTERN int next_mesg;
 
 typedef struct 
 {
@@ -1284,7 +1379,7 @@ typedef struct
 	XPoint data[1];
 } st_char_template;
 
-st_char_template *ascii_table[NUM_UCHARS];
+EXTERN st_char_template *ascii_table[NUM_UCHARS];
 
 #ifdef MAINFILE
 struct st_space { int cnt; } char_space = { 0 };
@@ -2263,60 +2358,60 @@ struct st_percent { int cnt; XPoint data[18]; } char_percent =
 /************************** Other global vars ************************/
 
 /* X */
-Display *display;
-Window win;
-Drawable drw;
-GC gc[NUM_COLOURS+1];
-int display_width;
-int display_height;
+EXTERN Display *display;
+EXTERN Window win;
+EXTERN Drawable drw;
+EXTERN GC gc[NUM_COLOURS+1];
+EXTERN int display_width;
+EXTERN int display_height;
 
 /* Command line */
-int do_sound;
-int use_write_delay;
-int write_delay;
-int win_width;
-int win_height;
-int win_refresh;
-int x_mode;
-int events_debug;
-int draw_tail;
-char *basic_file;
-char *basic_arg;
+EXTERN int do_sound;
+EXTERN int use_write_delay;
+EXTERN int write_delay;
+EXTERN int win_width;
+EXTERN int win_height;
+EXTERN int win_refresh;
+EXTERN int x_mode;
+EXTERN int events_debug;
+EXTERN int draw_tail;
+EXTERN char *basic_file;
+EXTERN char *basic_arg;
 
 /* Draw */
-char freq_text[20];
-char sample_speed_text[20];
-double g_x_scale;
-double g_y_scale;
-double g_avg_scale;
-int freq_text_len;
-int freq_col;
-int intro_cnt;
+EXTERN char freq_text[20];
+EXTERN char sample_speed_text[20];
+EXTERN double g_x_scale;
+EXTERN double g_y_scale;
+EXTERN double g_avg_scale;
+EXTERN int freq_text_len;
+EXTERN int freq_col;
+EXTERN int intro_cnt;
 
 /* Hover text */
-char *hover_str;
-double hover_x_scale;
-int hover_x;
-int hover_y;
+EXTERN char *hover_str;
+EXTERN double hover_x_scale;
+EXTERN int hover_x;
+EXTERN int hover_y;
 
 /* Misc */
-struct termios saved_tio;
-int win_mapped;
-int escape_cnt;
-int load_prog_cnt;
-int show_credits;
-int show_section_status;
-int first_mouse_button;
-int ignore_mouse_release;
-int do_messages;
-int do_sampling;
-int freeze_waveform;
-char *home_dir;
-DIR *list_dir;
-char *patch_file;
-char title_str[TITLE_MAX_LEN+1];
-char dirbuff[PATH_MAX+1];
-char effects_seq_str[EFFECTS_SEQ_STR_LEN];
+EXTERN struct termios saved_tio;
+EXTERN int win_mapped;
+EXTERN int escape_cnt;
+EXTERN int load_prog_cnt;
+EXTERN int show_credits;
+EXTERN int show_section_status;
+EXTERN int first_mouse_button;
+EXTERN int ignore_mouse_release;
+EXTERN int do_messages;
+EXTERN int do_sampling;
+EXTERN int freeze_waveform;
+EXTERN char *home_dir;
+EXTERN DIR *list_dir;
+EXTERN char *patch_file;
+EXTERN char title_str[TITLE_MAX_LEN+1];
+EXTERN char dirbuff[PATH_MAX+1];
+EXTERN char effects_seq_str[EFFECTS_SEQ_STR_LEN];
 
 /******************************** BASIC *******************************/
 
@@ -2586,9 +2681,9 @@ typedef struct st_var
 	struct st_var *next;
 } st_var;
 
-st_var *first_var[NUM_UCHARS];
-st_var *last_var[NUM_UCHARS];
-st_var *system_var[NUM_SYSTEM_VARS];
+EXTERN st_var *first_var[NUM_UCHARS];
+EXTERN st_var *last_var[NUM_UCHARS];
+EXTERN st_var *system_var[NUM_SYSTEM_VARS];
 
 
 typedef struct 
@@ -2651,7 +2746,7 @@ typedef struct
 
 } st_token;
 
-st_token *token_list;
+EXTERN st_token *token_list;
 
 /*** Stores labels and their locations. The reason that gotos don't just use
      jump_loc in st_token is the goto value can be an expression which could
@@ -2663,7 +2758,7 @@ typedef struct st_label
 	struct st_label *next;
 } st_label;
 
-st_label *first_label, *last_label;
+EXTERN st_label *first_label, *last_label;
 
 
 /*** Commands. Normal commands are COM_, sub commands (ie commands that must
@@ -3430,19 +3525,19 @@ enum st_num_type
 };
 
 
-int num_tokens;
-int num_tokens_alloc;
-int call_basic;
-int yield_after;  
-int com_exec_cnt;
-int blocking_section;
-int runnable_sections;
-int restart_cnt;
-int auto_messages;
-int io_messages;
-int pause_program;
-int deferred_init;
-int do_timer_catchup;
+EXTERN int num_tokens;
+EXTERN int num_tokens_alloc;
+EXTERN int call_basic;
+EXTERN int yield_after;  
+EXTERN int com_exec_cnt;
+EXTERN int blocking_section;
+EXTERN int runnable_sections;
+EXTERN int restart_cnt;
+EXTERN int auto_messages;
+EXTERN int io_messages;
+EXTERN int pause_program;
+EXTERN int deferred_init;
+EXTERN int do_timer_catchup;
 
 
 /************************* Forward declarations **************************/
@@ -3514,39 +3609,39 @@ void osxAudioCallback(void *ptr, AudioQueueRef q, AudioQueueBufferRef buf);
 #endif
 
 /* sound_gen.c */
-void addSine(int ch, double vol, double freq, int cutoff_ang1, int reset);
-void addSineFM(
+void  addSine(int ch, double vol, double freq, int cutoff_ang1, int reset);
+void  addSineFM(
 	int ch,
 	double vol,
 	double freq,
 	double fm_vol,
 	double fm_freq, double fm_vol_exp, int cutoff_ang1, int reset);
-void addTriangle(int ch, double vol, double freq, int reset);
-void addSquare(int ch, double vol, double freq, double width, int reset);
-void addSawtooth(
+void  addTriangle(int ch, double vol, double freq, int reset);
+void  addSquare(int ch, double vol, double freq, double width, int reset);
+void  addSawtooth(
 	int ch, double vol, double freq, double flatten_ratio, int reset);
-void addWav(int ch, int snd, double vol, double freq, int reset);
-void addNoise(double vol, double freq, int reset);
-void addSample(
+void  addWav(int ch, int snd, double vol, double freq, int reset);
+void  addNoise(double vol, double freq, int reset);
+void  addSample(
 	double vol,
 	u_short win_width, double freq, int sample_mod_cnt, int reset);
-void filter(
+void  filter(
 	u_char highpass,
 	double level, short *sbuff, int sbuff_size, short *prev_end);
-void resonate(
+void  resonate(
 	double zero_force_mult,
 	double speed_mult, double damping_mult, int reset);
-void distort(u_char level);
-void flanger(int type_mult, int offset, int dirty, int smooth);
-void phaser(
+void  distort(u_char level);
+void  flanger(int type_mult, int offset, int dirty, int smooth);
+void  phaser(
 	int type_mult,
 	int freq_div, int high_offset, double low_off_mult, int smooth);
-void fmFlanger(int layers, int pitch_change);
+void  fmFlanger(int layers, int pitch_change);
 short vibrato(short freq, double vib_mult, double ang_inc);
-void alias(u_char al, short peak_volume);
-void reflect(u_char rl, u_char rs, short peak_volume);
-void ringModulate(int snd, int freq, int level);
-int gainCompression(int val);
+void  alias(u_char al, short peak_volume);
+void  reflect(u_char rl, u_char rs, short peak_volume);
+void  ringModulate(int snd, int freq, int level);
+int   gainCompression(int val);
 
 /* sound_misc.c */
 void  setKeyStartNote(char val);
@@ -3654,45 +3749,45 @@ void pauseProgram(int on);
 void stopProgram();
 
 /* bas_variables.c */
-void initVariableArrays();
-void createSystemVariables();
+void    initVariableArrays();
+void    createSystemVariables();
 st_var *createVariable(int *pc, int *is_array);
-int getVariableValue(int *pc, st_value *value);
+int     getVariableValue(int *pc, st_value *value);
 st_var *getVariableAndIndex(int *pc, st_value *index);
 st_var *getVariable(char *name);
-int setVariable(
+int  setVariable(
 	st_var *var,
 	st_value *index, int force, double num, char *str, st_token *token);
-int setVariableByValue(
+int  setVariableByValue(
 	st_var *var,
 	st_value *index, int force, st_value *result, st_token *token);
 void clearVariable(st_var *var);
 void deleteVariables();
 st_dict *getDictionaryElementByKey(st_var *var, char *key);
 st_dict *getDictionaryElementByNumber(st_var *var, int pos);
-int deleteDictionaryElement(st_var *var, char *key);
+int  deleteDictionaryElement(st_var *var, char *key);
 
 /* bas_expressions.c */
 int evalExpression(int start, int end, st_value *result);
 
 /* bas_functions.c */
 void setupGSFields();
-int callFunction(int *pc, int end, st_value *result);
+int  callFunction(int *pc, int end, st_value *result);
 
 /* bas_values.c */
-void initValue(st_value *result);
-void setValue(st_value *result, double val, char *strval);
-void setValueByValue(st_value *value1, st_value *value2);
-void setDirectStringValue(st_value *value, char *strval);
-void appendStringValue(st_value *value1, st_value *value2);
+void  initValue(st_value *result);
+void  setValue(st_value *result, double val, char *strval);
+void  setValueByValue(st_value *value1, st_value *value2);
+void  setDirectStringValue(st_value *value, char *strval);
+void  appendStringValue(st_value *value1, st_value *value2);
 char *multStringValue(st_value *value, int cnt);
-void clearValue(st_value *value);
-int trueValue(st_value *value);
+void  clearValue(st_value *value);
+int   trueValue(st_value *value);
 
 /* bas_labels.c */
 void addLabel(char *name, int loc);
-int getLabelLocation(char *name);
+int  getLabelLocation(char *name);
 
 /* bas_misc.c */
-int isNumber(char *str, int allow_neg);
+int  isNumber(char *str, int allow_neg);
 void basicError(int err, st_token *token);

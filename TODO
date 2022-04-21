@@ -1,4 +1,7 @@
+more wavs?
 Fix OS/X sound glitches
 convolution
 	multiply sample input by waveform
 Optionally don't require declaration of variables in basic
+
+rewrite in C++

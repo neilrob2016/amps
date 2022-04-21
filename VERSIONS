@@ -329,3 +329,12 @@ September 2020
 ==============
 1.11.2
 - Tidied up main.c
+
+
+April 2022
+==========
+1.20.0
+- Added morphing to sine wave on main oscillator and overall with MOM and MOG
+  dials.
+- Removed multiple declaration errors on newer versions of gcc
+- Minor code tidying.

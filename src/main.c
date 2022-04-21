@@ -1,7 +1,7 @@
 /****************************************************************************
  The Analogue Modelling Painted Sound (AMPS) monophonic Synthesizer
 
- Copyright (C) Neil Robertson 2013-2020
+ Copyright (C) Neil Robertson 2013-2022
 
  A mouse driven analogue modelling synth with the following features:
 	Sine, Square, Triangle, Sawtooth waveforms
@@ -15,6 +15,7 @@
         Phaser
 	Arpeggiator
 	Chord generator
+	Waveform morphing
 	Sampler
 
  ****************************************************************************/
