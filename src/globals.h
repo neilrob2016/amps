@@ -58,7 +58,7 @@
 
 #define COPYRIGHT1   "Copyright (C) Neil Robertson 2013-2022"
 #define COPYRIGHT2   "AMPS SYNTH - COPYRIGHT (C) NEIL ROBERTSON 2013-2022"
-#define VERSION      "1.12.0"
+#define VERSION      "1.12.1"
 #define PATCH_SUFFIX ".amp"
 
 #define STDIN       0
@@ -1007,7 +1007,7 @@ struct st_sharmem
 EXTERN struct st_sharmem *shm;
 
 #define RANDOMISE_START &shm->note_scale
-#define RANDOMISE_END   &shm->fm_wierd
+#define RANDOMISE_END   &shm->morph_global
 
 enum en_status
 {
