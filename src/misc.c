@@ -3,6 +3,32 @@
 #include "globals.h"
 
 
+void calcVolumeBar()
+{
+	int i;
+	int avg;
+
+	/* Get average volume level of buffer */
+	for(i=avg=0;i < SNDBUFF_SIZE;++i) avg += abs(sndbuff[i]);
+	avg /= SNDBUFF_SIZE;
+
+	/* Get maximum bar position. 20000 seems to be the value that
+	   works best for this */
+	vol_bar_max = avg / (20000 / VOL_BAR_ELEMENTS);
+	if (vol_bar_max > VOL_BAR_ELEMENTS) vol_bar_max = VOL_BAR_ELEMENTS;
+
+	/* Previous max holds for a while if nothing higher */
+	if (++vol_bar_hold_cnt == VOL_BAR_HOLD_ITER ||
+	    vol_bar_max > vol_bar_hold_max)
+	{
+		vol_bar_hold_cnt = 0;
+		vol_bar_hold_max = vol_bar_max;
+	}
+}
+
+
+
+
 /*** Get the current time down to the microsecond. Value wraps once every
      1000 seconds. Goes from 0 -> 999999999 (1 billion - 1) ***/
 u_int getUsecTime()

@@ -34,6 +34,7 @@ void showInfo(int extra);
 void init();
 void Xinit();
 void Xloop();
+void calcVolumeBar();
 void consoleLoop();
 void sigHandler(int sig);
 
@@ -448,6 +449,9 @@ void init()
 	patch_file = NULL;
 	evr_events = NULL;
 	prev_note_scale = -1;
+	vol_bar_max = 0;
+	vol_bar_hold_cnt = 0;
+	vol_bar_hold_max = 0;
 
 	/* Get home directory - try $HOME first. Required for ~ in load/save */
 	if (!(home_dir = getenv("HOME")) || !home_dir[0])
@@ -844,6 +848,9 @@ void Xloop()
 
 		/* Spectrum analyser */
 		if (params.show_analyser) calcDFT();
+
+		/* Average volume loudness graphic bar */
+		if (params.show_volume_bar) calcVolumeBar();
 
 		/* Go through patch listing */
 		if (list_dir) listFiles(NULL);

@@ -270,6 +270,10 @@ $sound_system                OS sound system used
 $sampling_enabled            1 or 0 depending on whether sampling is enabled.
 $com_exec_cnt                The number of BASIC commands execute in the 
                              current time slice.
+$vol_bar_elements            The number of seperate display elements in the
+                             volume bar.
+$vol_bar_top_value           The current top volume bar element being displayed.
+$vol_bar_hold_value          The held top volume bar element.
 
 ===============================================================================
 

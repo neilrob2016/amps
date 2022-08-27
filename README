@@ -208,11 +208,14 @@ EVR CLEAR ('/')
 --------------
 These buttons are simple ON/OFF types.
 
+BUFFER RESET
+  Reset the waveform generation buffers on each iteration.
+
 SPECTRUM ANALYSER
   Show a frequency histogram
 
-BUFFER RESET
-  Reset the waveform generation buffers on each iteration.
+VOLUME BAR
+  Show a volume bar on the right
 
 HIGHPASS FILTER 
   The default is a lowpass filter. Use this to switch to a highpass one.

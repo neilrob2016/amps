@@ -341,3 +341,11 @@ April 2022
 
 1.12.1
 - Fixed bug where new morph functionality wasn't being set by random button.
+
+
+August 2022
+===========
+1.13.0
+- Added volume bar functionality. VOLUME BAR button and $vol_bar_* system
+  variables.
+- Swapped spectrum analyser and buffer reset button positions

@@ -58,7 +58,7 @@
 
 #define COPYRIGHT1   "Copyright (C) Neil Robertson 2013-2022"
 #define COPYRIGHT2   "AMPS SYNTH - COPYRIGHT (C) NEIL ROBERTSON 2013-2022"
-#define VERSION      "1.12.1"
+#define VERSION      "1.13.0"
 #define PATCH_SUFFIX ".amp"
 
 #define STDIN       0
@@ -182,127 +182,130 @@ enum en_button
 	/* 15 */
 	BUT_EVR_PATCH_EQ_MAIN,
 	BUT_EVR_CLEAR,
-	BUT_SPECTRUM_ANALYSER, /* Bottom layer 2 */
-	BUT_BUFFER_RESET,
-	BUT_HIGHPASS_FILTER,
+	BUT_BUFFER_RESET,  /* Bottom layer 2 */
+	BUT_SPECTRUM_ANALYSER, 
+	BUT_VOLUME_BAR,
 
 	/* 20 */
+	BUT_HIGHPASS_FILTER,
 	BUT_ECHO_HIGHPASS_FILTER,
 	BUT_HOLD_NOTE,
 	BUT_SUB1_NOTE_OFFSET,
 	BUT_SUB2_NOTE_OFFSET,
-	BUT_SUBS_FOLLOW,
 
 	/* 25 */
+	BUT_SUBS_FOLLOW,
 	BUT_RANDOMISE,
 	BUT_RESTART_PROG,
 	BUT_PAUSE_PROG,
 	BUT_DEL_PROG,
-	BUT_ECHO_CLEAR, /* Bottom layer 3 */
 
 	/* 30 */
+	BUT_ECHO_CLEAR, /* Bottom layer 3 */
 	BUT_ECHO_INVERT,
 	BUT_ECHO_LEN,
 	BUT_ECHO_DECAY,
 	BUT_ECHO_FILTER,
-	BUT_ECHO_STRETCH,
 
 	/* 35 */
+	BUT_ECHO_STRETCH,
 	BUT_CHORD,
 	BUT_ARP_SEQ,
 	BUT_ARP_SPACING_DEC,
 	BUT_ARP_SPACING_INC,
-	BUT_ARP_DELAY_DEC,
 
 	/* 40 */
+	BUT_ARP_DELAY_DEC,
 	BUT_ARP_DELAY_INC,
 	BUT_SUB1_SOUND,
 	BUT_SUB1_OFFSET,
 	BUT_SUB1_VOL,
-	BUT_SUB2_SOUND,
 
 	/* 45 */
+	BUT_SUB2_SOUND,
 	BUT_SUB2_OFFSET,
 	BUT_SUB2_VOL,
 	BUT_VIB_SWEEP,
 	BUT_VIB_LFO,
-	BUT_SINE_CUTOFF,
 
 	/* 50 */
+	BUT_SINE_CUTOFF,
 	BUT_SINE_CUTOFF_LFO,
 	BUT_SQUARE_WIDTH,
 	BUT_SQUARE_WIDTH_LFO,
 	BUT_SAW_FLATTEN,
-	BUT_SAW_FLATTEN_LFO,
 
-	/* 55: Bottom layer 4 */
-	BUT_FREQ_MODE,
+	/* 55 */
+	BUT_SAW_FLATTEN_LFO,
+	BUT_FREQ_MODE, /* Bottom layer 4 */
 	BUT_MAX_FREQ,
 	BUT_COMPRESS_START,
 	BUT_COMPRESS_EXP,
-	BUT_EFFECTS_TO_SWAP,
 
 	/* 60 */
+	BUT_EFFECTS_TO_SWAP,
 	BUT_SWAP_EFFECTS,
 	BUT_RESET_EFFECTS_SEQ,
 	BUT_SAMPLE_MOD_DEC,
 	BUT_SAMPLE_MOD_INC,
-	BUT_FM_HARM_OFFSET,
 
 	/* 65 */
+	BUT_FM_HARM_OFFSET,
 	BUT_FM_MULT1,
 	BUT_FM_MULT2,
 	BUT_FM_OFFSET,
 	BUT_FM_VOL1,
-	BUT_FM_VOL2,
 
 	/* 70 */
+	BUT_FM_VOL2,
 	BUT_FM_WIERD,
 	BUT_PHASING_MODE,
 	BUT_PHASING_OFFSET,
 	BUT_PHASING_SWEEP,
-	BUT_PHASING_LFO,
 
 	/* 75 */
+	BUT_PHASING_LFO,
 	BUT_PHASER_FREQ_SEP,
 	BUT_PHASER_LOW_OFF_MULT,
 	BUT_FILTER_SWEEP,
 	BUT_FILTER_LFO,
-	BUT_REFLECT_LEVEL,
 
 	/* 80 */
+	BUT_REFLECT_LEVEL,
 	BUT_REFLECT_SMOOTHING,
 	BUT_RES_MODE, /* Bottom layer 5 */
 	BUT_RES_LEVEL,
 	BUT_RES_FREQ,
-	BUT_RES_DAMPING,
 
 	/* 85 */
+	BUT_RES_DAMPING,
 	BUT_GLIDE_DISTANCE,
 	BUT_GLIDE_VELOCITY,
 	BUT_DISTORTION,
 	BUT_ALIASING,
-	BUT_RING_RANGE,
 
 	/* 90 */
+	BUT_RING_RANGE,
 	BUT_RING_MODE,
 	BUT_RING_LEVEL,
 	BUT_RING_FREQ,
 	BUT_MORPH_MAIN,
-	BUT_MORPH_GLOBAL,
 
 	/* 95 */
+	BUT_MORPH_GLOBAL,
 	BUT_ATTACK,
 	BUT_DECAY,
 	BUT_VOLUME,
 	BUT_ANALYSER_RANGE,
-	BUT_SAVE_PATCH,
 
 	/* 100 */
+	BUT_SAVE_PATCH,
 	BUT_SAVE_PROG,
 	BUT_LOAD_PATCH,
 	BUT_LOAD_PROG,
 	BUT_RESET,
+
+	/* 105 */
 	BUT_QUIT,
 
 	NUM_BUTTONS
@@ -363,6 +366,14 @@ enum en_morph_chan
 #define BOT_Y5 (WIN_HEIGHT - BUTTON_HEIGHT)
 
 #define MESG_START_Y (BOT_Y1 - BUTTON_HEIGHT)
+
+#define VOL_BAR_ELEMENTS  50
+#define VOL_BAR_GAP       2
+#define VOL_BAR_HEIGHT    6
+#define VOL_BAR_WIDTH     30
+#define VOL_BAR_BOT       (BOT_Y1 + 3)
+#define VOL_BAR_X         (WIN_WIDTH - VOL_BAR_WIDTH - 10)
+#define VOL_BAR_HOLD_ITER 50
 
 struct st_waveform
 {
@@ -430,127 +441,130 @@ char *button_name[NUM_BUTTONS] =
 	/* 15 */
 	"EVR PATCH = MAIN",
 	"EVR CLEAR",
-	"SPECTRUM ANALYSER", /* Bottom layer 2 */
-	"BUFFER RESET",
-	"HIGHPASS FILTER",
+	"BUFFER RESET",  /* Bottom layer 2 */
+	"SPECTRUM ANALYSER",
+	"VOLUME BAR",
 
 	/* 20 */
+	"HIGHPASS FILTER",
 	"ECHO HIGHPASS FILTER",
 	"HOLD NOTE",
 	"SUB1 NOTES",
 	"SUB2 NOTES",
-	"SUBS FOLLOW MAIN",
 
 	/* 25 */
+	"SUBS FOLLOW MAIN",
 	"RANDOMISE",
 	"RESTART PROG",
 	"PAUSE PROG",
 	"DEL PROG",
-	"EC", /* Bottom layer 3 */
 
 	/* 30 */
+	"EC", /* Bottom layer 3 */
 	"EI",
 	"EL",
 	"ED",
 	"EF",
-	"EST",
 
 	/* 35 */
+	"EST",
 	"CH",
 	"AR",
 	"AS1",
 	"AS2",
-	"AD1",
 
 	/* 40 */
+	"AD1",
 	"AD2",
 	"SB1",
 	"SO1",
 	"SV1",
-	"SB2",
 
 	/* 45 */
+	"SB2",
 	"SO2",
 	"SV2",
 	"VS",
 	"VL",
-	"SC",
 
 	/* 50 */
+	"SC",
 	"LS",
 	"SW",
 	"LW",
 	"SF",
-	"SL",
 
-	/* 55: Bottom layer 4 */
-	"FQ",
+	/* 55 */
+	"SL",
+	"FQ", /* Bottom layer 4 */
 	"MF",
 	"CS",
 	"CE",
-	"ET",
 
 	/* 60 */
+	"ET",
 	"ES", 
 	"ER",
 	"SM1",
 	"SM2",
-	"FH",
 
 	/* 65 */
+	"FH",
 	"FM1",
 	"FM2",
 	"FO",
 	"FV1",
-	"FV2",
 
 	/* 70 */
+	"FV2",
 	"FW",
 	"PH",
 	"PO",
 	"PS",
-	"PL",
 
 	/* 75 */
+	"PL",
 	"PF",
 	"PD",
 	"FS",
 	"FL",
-	"RT",
 
 	/* 80 */
+	"RT",
 	"RS",
 	"RE", /* Bottom layer 5 */
 	"RL",
 	"RF",
-	"RD",
 
 	/* 85 */
+	"RD",
 	"GD",
 	"GV",
 	"DI",
 	"AL",
-	"RI",
 
 	/* 90 */
+	"RI",
 	"RM",
 	"IL",
 	"IF",
 	"MOM",
-	"MOG",
 
 	/* 95 */
+	"MOG",
 	"AT",
 	"DE",
 	"VOL",
 	"SAR",
-	"SVP",
 
 	/* 100 */
+	"SVP",
 	"SVB",
 	"LDP",
 	"LDB",
 	"RST",
+
+	/* 105 */
 	"QU"
 };
 #else
@@ -886,6 +900,7 @@ struct st_params
 	u_char do_decay:1;         /* No longer used */
 	u_char subs_follow_main:1;
 	u_char fill_waveform:1;
+	u_char show_volume_bar:1;
 
 	u_char freq_range;
 	char   key_start_note; /* Can go negative */
@@ -2384,6 +2399,9 @@ EXTERN char sample_speed_text[20];
 EXTERN double g_x_scale;
 EXTERN double g_y_scale;
 EXTERN double g_avg_scale;
+EXTERN int vol_bar_max;
+EXTERN int vol_bar_hold_cnt;
+EXTERN int vol_bar_hold_max;
 EXTERN int freq_text_len;
 EXTERN int freq_col;
 EXTERN int intro_cnt;
@@ -2653,6 +2671,11 @@ enum en_system_vars
 	SVAR_SOUND_SYSTEM,
 	SVAR_SAMPLING_ENABLED,
 	SVAR_COM_EXEC_CNT,
+
+	/* 50 */
+	SVAR_VOL_BAR_ELEMENTS,
+	SVAR_VOL_BAR_TOP_VALUE,
+	SVAR_VOL_BAR_HOLD_VALUE,
 
 	NUM_SYSTEM_VARS
 };
@@ -3721,6 +3744,7 @@ struct st_recorder_event *evrCreateNewEvent();
 void evrPlayEvents(u_int now);
 
 /* misc.c */
+void   calcVolumeBar();
 u_int  getUsecTime();
 double getUsecTimeAsDouble();
 void   incAngle(double *ang, double add);

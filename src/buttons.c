@@ -116,6 +116,7 @@ void setupButtons()
 		case BUT_EVR_EVENTS_IN_SAVE:
 		case BUT_EVR_PATCH_RESET:
 		case BUT_SPECTRUM_ANALYSER:
+		case BUT_VOLUME_BAR:
 		case BUT_PHASING_MODE:
 		case BUT_PHASING_OFFSET:
 		case BUT_PHASING_SWEEP:
@@ -314,6 +315,7 @@ void resetButtons(int init, int reset_evr)
 		case BUT_EVR_PATCH_RESET:
 		case BUT_EVR_EVENTS_IN_SAVE:
 		case BUT_SPECTRUM_ANALYSER:
+		case BUT_VOLUME_BAR:
 		case BUT_BUFFER_RESET:
 		case BUT_HIGHPASS_FILTER:
 		case BUT_ECHO_INVERT:
@@ -861,6 +863,18 @@ void doButtonAction(int mouse_button, int but, double angle, int bas_on)
 			SECTION_BUTTON,
 			but,params.show_analyser,onoff[params.show_analyser]);
 		break;
+
+	case BUT_VOLUME_BAR:
+		if (bas_on)
+			params.show_volume_bar = ON_OFF();
+		else
+			FLIP(params.show_volume_bar,BUT_VOLUME_BAR);
+		message("Volume bar = %s",onoff[params.show_volume_bar]);
+		runEventSection(
+			SECTION_BUTTON,
+			but,params.show_volume_bar,onoff[params.show_volume_bar]);
+		break;
+
 
 	case BUT_BUFFER_RESET:
 		if (bas_on)
@@ -1600,6 +1614,9 @@ double getButtonValue(int but)
 	{
 	case BUT_SPECTRUM_ANALYSER:
 		return params.show_analyser;
+
+	case BUT_VOLUME_BAR:
+		return params.show_volume_bar;
 
 	case BUT_BUFFER_RESET:
 		return shm->buffer_reset;

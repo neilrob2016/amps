@@ -538,7 +538,7 @@ void evrPlayEvents(u_int now)
 		}
 		if (!x_mode)
 		{
-			printf("Event %d/%d\r",evr_next_play_event,evr_events_cnt);
+			printf("Event %u/%u\r",evr_next_play_event,evr_events_cnt);
 			fflush(stdout);
 		}
 

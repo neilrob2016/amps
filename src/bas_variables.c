@@ -96,6 +96,11 @@ void createSystemVariables()
 		"$sound_system",
 		"$sampling_enabled",
 		"$com_exec_cnt",
+
+		/* 50 */
+		"$vol_bar_elements",
+		"$vol_bar_top_value",
+		"$vol_bar_hold_value"
 	};
 	st_value index;
 	int arr_size;
@@ -227,6 +232,10 @@ void createSystemVariables()
 
 		case SVAR_SOUND_SYSTEM:
 			setVariable(system_var[i],NULL,1,0,sound_system,0);
+			break;
+
+		case SVAR_VOL_BAR_ELEMENTS:
+			setVariable(system_var[i],NULL,1,VOL_BAR_ELEMENTS,NULL,0);
 			break;
 		}
 	}
@@ -469,11 +478,18 @@ int getVariableValue(int *pc, st_value *value)
 			setValue(value,com_exec_cnt+1,NULL);
 			break;
 
-
 		case SVAR_SAMPLING_ENABLED:
 			/* Sampling can be disabled after BASIC initialised
 			   so can't hard code it in createSystemVariables() */
 			setValue(value,do_sampling,NULL);
+			break;
+
+		case SVAR_VOL_BAR_TOP_VALUE:
+			setValue(value,vol_bar_max,NULL);
+			break;
+
+		case SVAR_VOL_BAR_HOLD_VALUE:
+			setValue(value,vol_bar_hold_max,NULL);
 			break;
 
 		default:

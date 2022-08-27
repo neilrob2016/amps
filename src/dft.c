@@ -37,7 +37,6 @@ double dft(int freq)
 	static double cos_total;
 	static double level;
 	static int x;
-	static int iang;
 
 	/* Have static trig tables to speed DFT up at the expense of a slight 
 	   loss of accuracy */
@@ -61,12 +60,11 @@ double dft(int freq)
 	for(x=0;x < SNDBUFF_SIZE;++x)
 	{
 		level = (double)sndbuff[x];
-		iang = (int)ang;
 
 		/* Use sin and cos since waveform may not be in phase with
 		   either so need summed result */
-		sin_total += (level * sinval[iang]);
-		cos_total += (level * cosval[iang]);
+		sin_total += (level * sinval[(int)ang]);
+		cos_total += (level * cosval[(int)ang]);
 
 		ang += anginc;
 		if (ang >= 360) ang -= 360;

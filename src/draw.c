@@ -11,6 +11,7 @@ static void drawMessages();
 static void drawKeys();
 static void drawInfoLine();
 static void drawSpectrumAnalyser();
+static void drawVolumeBar();
 static void drawFilterBar();
 static void drawWaveform();
 static void drawEventCounts();
@@ -64,6 +65,8 @@ void draw()
 
 	if (params.show_analyser) drawSpectrumAnalyser();
 	drawWaveform();
+	if (params.show_volume_bar) drawVolumeBar();
+
 	drawEventCounts();
 	drawButtons();
 
@@ -360,6 +363,34 @@ void drawSpectrumAnalyser()
 		}
 		x += w;
 		col = (col == BLUE ? PURPLE : BLUE);
+	}
+}
+
+
+
+
+void drawVolumeBar()
+{
+	int i;
+	int y;
+	int col;
+
+	y = VOL_BAR_BOT - VOL_BAR_HEIGHT;
+	col = TURQUOISE;
+	for(i=1;i <= VOL_BAR_ELEMENTS;++i)
+	{
+		if (i <= vol_bar_max || i == vol_bar_hold_max)
+		{
+			fillRectangle(
+				col,
+				VOL_BAR_WIDTH,VOL_BAR_HEIGHT - VOL_BAR_GAP,
+				VOL_BAR_X,y);
+
+			/* hold_max is always >= max */
+			if (i == vol_bar_hold_max) return;
+		}
+		y -= VOL_BAR_HEIGHT;
+		if (--col < GREEN) col = MEDIUM_YELLOW;
 	}
 }
 
